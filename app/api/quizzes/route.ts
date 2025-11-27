@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { createQuizSchema } from '@/lib/validations/quiz'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAdmin()

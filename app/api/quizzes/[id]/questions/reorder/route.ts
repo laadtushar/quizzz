@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const reorderSchema = z.object({
   questions: z.array(
     z.object({

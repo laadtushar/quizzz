@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin, getCurrentUser } from '@/lib/auth/middleware'
 import { updateQuizSchema } from '@/lib/validations/quiz'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

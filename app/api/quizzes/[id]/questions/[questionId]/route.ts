@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { updateQuestionSchema } from '@/lib/validations/quiz'
 
+export const dynamic = 'force-dynamic'
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string; questionId: string } }

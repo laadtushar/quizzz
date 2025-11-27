@@ -5,6 +5,8 @@ import { createSession, setSessionCookie } from '@/lib/auth/session'
 import { hasAlsoitEmail } from '@/lib/auth/middleware'
 import { registerSchema } from '@/lib/validations/auth'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

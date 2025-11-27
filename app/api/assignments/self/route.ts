@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth/middleware'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const selfAssignSchema = z.object({
   quizId: z.string().uuid(),
 })

@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { createQuestionSchema, updateQuestionSchema } from '@/lib/validations/quiz'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }

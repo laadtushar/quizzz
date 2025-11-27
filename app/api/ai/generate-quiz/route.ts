@@ -5,6 +5,8 @@ import { requireAdmin } from '@/lib/auth/middleware'
 import { generateQuizSchema } from '@/lib/validations/ai-generation'
 import { generateQuiz } from '@/lib/ai/generateQuiz'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAdmin()
