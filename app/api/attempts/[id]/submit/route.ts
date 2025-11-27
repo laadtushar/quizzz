@@ -42,8 +42,8 @@ export async function POST(
       )
     }
 
-    // Score the attempt
-    const scoredAnswers = scoreAttempt(attempt.quiz.questions, answers)
+    // Score the attempt - cast questions to match expected type
+    const scoredAnswers = scoreAttempt(attempt.quiz.questions as any, answers)
     const totalScore = scoredAnswers.reduce((sum, a) => sum + a.pointsEarned, 0)
     const percentage = (totalScore / attempt.maxScore) * 100
     const passingScore = attempt.quiz.settingsPassingScore
@@ -83,7 +83,7 @@ export async function POST(
           timeSpent: timeSpent || null,
           xpAwarded,
           isPassed,
-          answers: scoredAnswers,
+          answers: scoredAnswers as any,
         },
       })
 

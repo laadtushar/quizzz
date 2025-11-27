@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/middleware'
 
 export async function POST(
@@ -54,8 +55,8 @@ export async function POST(
             type: q.type,
             questionText: q.questionText,
             points: q.points,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
+            options: q.options ? q.options : Prisma.JsonNull,
+            correctAnswer: q.correctAnswer ? q.correctAnswer : Prisma.JsonNull,
             explanation: q.explanation,
             imageUrl: q.imageUrl,
           })),

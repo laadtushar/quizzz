@@ -174,7 +174,12 @@ export function QuestionEditorDialog({
           <QuestionEditor
             key={question?.id || 'new'}
             type={questionData.type}
-            initialData={questionData}
+            initialData={{
+              ...questionData,
+              options: questionData.options ?? undefined,
+              explanation: questionData.explanation ?? undefined,
+              imageUrl: questionData.imageUrl ?? undefined,
+            }}
             onChange={(data) => {
               setQuestionData(data as Question)
               setIsValid(validateQuestion(data as Question))

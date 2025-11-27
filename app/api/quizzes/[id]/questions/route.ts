@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { createQuestionSchema, updateQuestionSchema } from '@/lib/validations/quiz'
 
@@ -28,7 +29,7 @@ export async function POST(
         type: validatedData.type,
         questionText: validatedData.questionText,
         points: validatedData.points,
-        options: validatedData.options || null,
+        options: validatedData.options ? validatedData.options : Prisma.JsonNull,
         correctAnswer: validatedData.correctAnswer,
         explanation: validatedData.explanation,
         imageUrl: validatedData.imageUrl,
