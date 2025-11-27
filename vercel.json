@@ -1,0 +1,22 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/send-assignment-reminders",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/update-overdue-assignments",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-incomplete-attempts",
+      "schedule": "0 3 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 60
+    }
+  }
+}
+
