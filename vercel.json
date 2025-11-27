@@ -5,12 +5,8 @@
       "schedule": "0 9 * * *"
     },
     {
-      "path": "/api/cron/update-overdue-assignments",
+      "path": "/api/cron/daily-maintenance",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-incomplete-attempts",
-      "schedule": "0 3 * * *"
     }
   ],
   "functions": {
