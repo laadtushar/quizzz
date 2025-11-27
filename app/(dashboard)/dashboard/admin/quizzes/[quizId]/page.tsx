@@ -10,6 +10,7 @@ import { QuizSettingsForm } from '@/components/admin/QuizSettingsForm'
 import { QuestionList } from '@/components/admin/QuestionList'
 import { QuestionEditorDialog } from '@/components/admin/QuestionEditorDialog'
 import { QuizPreview } from '@/components/admin/QuizPreview'
+import { QuizResultsView } from '@/components/admin/QuizResultsView'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -293,6 +294,7 @@ export default function QuizEditPage() {
           <TabsTrigger value="questions">
             Questions ({quiz.questions?.length || 0})
           </TabsTrigger>
+          <TabsTrigger value="results">Results</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
         </TabsList>
 
@@ -329,6 +331,20 @@ export default function QuizEditPage() {
             onEdit={handleEditQuestion}
             onRefresh={refetch}
           />
+        </TabsContent>
+
+        <TabsContent value="results">
+          {quiz.status === 'published' ? (
+            <QuizResultsView quizId={quizId} />
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">
+                  Publish the quiz to view results. Results will appear here once users complete the quiz.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="preview">
