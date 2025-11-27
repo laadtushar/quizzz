@@ -16,12 +16,16 @@ const questionSchema = z.object({
 })
 
 export const quizGenerationResponseSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
   questions: z.array(questionSchema).min(1),
 })
 
 export function validateAIResponse(data: any, expectedCount: number): {
   valid: boolean
   questions?: any[]
+  title?: string
+  description?: string
   error?: string
 } {
   try {
@@ -92,6 +96,8 @@ export function validateAIResponse(data: any, expectedCount: number): {
     return {
       valid: true,
       questions: parsed.questions,
+      title: parsed.title,
+      description: parsed.description,
     }
   } catch (error) {
     return {

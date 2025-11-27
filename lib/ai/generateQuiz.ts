@@ -1,5 +1,4 @@
-import { generate } from '@genkit-ai/ai'
-import { model } from './config'
+import { ai, model } from './config'
 import { buildQuizGenerationPrompt } from './prompts'
 import { validateAIResponse } from './validators'
 
@@ -23,6 +22,8 @@ export interface GeneratedQuestion {
 
 export async function generateQuiz(params: GenerateQuizParams): Promise<{
   questions: GeneratedQuestion[]
+  title?: string
+  description?: string
   processingTimeMs: number
 }> {
   const startTime = Date.now()
@@ -35,23 +36,45 @@ export async function generateQuiz(params: GenerateQuizParams): Promise<{
   )
 
   try {
-    const response = await generate({
+    console.log('Calling AI model with prompt length:', prompt.length)
+    console.log('Model:', model)
+    
+    // Use Google GenAI SDK directly
+    const response = await ai.models.generateContent({
       model,
-      prompt,
+      contents: prompt,
       config: {
         temperature: 0.7,
         maxOutputTokens: 8192,
       },
     })
 
-    // Parse JSON from response
-    let parsedResponse: any
-    const text = typeof response === 'string' ? response : response.text?.() || String(response)
+    console.log('AI response received, type:', typeof response)
+
+    // Extract text from response
+    // GenerateContentResponse has a .text getter property that returns the concatenated text
+    let text: string
+    if (response.text) {
+      text = response.text
+    } else if (response.candidates && response.candidates.length > 0) {
+      // Fallback: extract from candidates
+      const candidate = response.candidates[0]
+      if (candidate.content?.parts?.[0]?.text) {
+        text = candidate.content.parts[0].text
+      } else {
+        text = JSON.stringify(response)
+      }
+    } else {
+      text = JSON.stringify(response)
+    }
+    
+    console.log('Extracted text length:', text.length)
 
     // Try to extract JSON from markdown code blocks if present
     const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/```\n([\s\S]*?)\n```/)
     const jsonText = jsonMatch ? jsonMatch[1] : text
 
+    let parsedResponse: any
     try {
       parsedResponse = JSON.parse(jsonText)
     } catch (parseError) {
@@ -69,6 +92,9 @@ export async function generateQuiz(params: GenerateQuizParams): Promise<{
     if (!validation.valid) {
       throw new Error(validation.error || 'Invalid AI response')
     }
+
+    const generatedTitle = validation.title || parsedResponse.title
+    const generatedDescription = validation.description || parsedResponse.description
 
     const processingTimeMs = Date.now() - startTime
 
@@ -89,13 +115,13 @@ export async function generateQuiz(params: GenerateQuizParams): Promise<{
       if (['mcq', 'multiple_select'].includes(mappedType) && q.options) {
         if (mappedType === 'mcq') {
           // Ensure correctAnswer is an optionId
-          const correctOption = q.options.find((o) => o.isCorrect)
+          const correctOption = q.options.find((o: { isCorrect: boolean }) => o.isCorrect)
           if (correctOption) {
             correctAnswer = correctOption.id
           }
         } else if (mappedType === 'multiple_select') {
           // Ensure correctAnswer is array of optionIds
-          correctAnswer = q.options.filter((o) => o.isCorrect).map((o) => o.id)
+          correctAnswer = q.options.filter((o: { isCorrect: boolean }) => o.isCorrect).map((o: { id: string }) => o.id)
         }
       }
 
@@ -103,7 +129,7 @@ export async function generateQuiz(params: GenerateQuizParams): Promise<{
       if (mappedType === 'ordering' && q.options) {
         if (!Array.isArray(correctAnswer)) {
           // Use option order as default
-          correctAnswer = q.options.map((o) => o.id)
+          correctAnswer = q.options.map((o: { id: string }) => o.id)
         }
       }
 
@@ -119,6 +145,8 @@ export async function generateQuiz(params: GenerateQuizParams): Promise<{
 
     return {
       questions,
+      title: generatedTitle || params.title,
+      description: generatedDescription || params.description,
       processingTimeMs,
     }
   } catch (error) {
@@ -128,4 +156,3 @@ export async function generateQuiz(params: GenerateQuizParams): Promise<{
     )
   }
 }
-

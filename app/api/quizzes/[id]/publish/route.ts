@@ -31,6 +31,9 @@ export async function PATCH(
       where: { id: params.id },
       data: {
         status: 'published',
+        // Ensure visibility is set to 'visible' when publishing
+        // (unless it was explicitly set to 'hidden' by admin)
+        visibility: quiz.visibility === 'hidden' ? 'hidden' : 'visible',
       },
     })
 

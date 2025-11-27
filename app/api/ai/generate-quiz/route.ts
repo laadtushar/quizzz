@@ -24,24 +24,36 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
       })
     } catch (error) {
+      console.error('AI generation error in API:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorStack = error instanceof Error ? error.stack : undefined
+      
       // Log error
-      await prisma.aIGenerationLog.create({
-        data: {
-          adminId: user.id,
-          inputTextLength: validatedData.inputText.length,
-          questionsRequested: validatedData.questionCount,
-          questionsGenerated: 0,
-          difficultyLevel: validatedData.difficulty,
-          questionTypes: validatedData.questionTypes,
-          modelUsed: 'gemini-1.5-pro',
-          processingTimeMs: Date.now() - startTime,
-          status: 'error',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        },
-      })
+      try {
+        await prisma.aIGenerationLog.create({
+          data: {
+            adminId: user.id,
+            inputTextLength: validatedData.inputText.length,
+            questionsRequested: validatedData.questionCount,
+            questionsGenerated: 0,
+            difficultyLevel: validatedData.difficulty,
+            questionTypes: validatedData.questionTypes,
+            modelUsed: 'gemini-1.5-pro',
+            processingTimeMs: Date.now() - startTime,
+            status: 'error',
+            errorMessage: errorMessage.substring(0, 1000), // Limit length
+          },
+        })
+      } catch (logError) {
+        console.error('Failed to log AI generation error:', logError)
+      }
 
       return NextResponse.json(
-        { error: 'AI generation failed', details: error instanceof Error ? error.message : 'Unknown error' },
+        { 
+          error: 'AI generation failed', 
+          details: errorMessage,
+          stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
+        },
         { status: 500 }
       )
     }
@@ -51,8 +63,8 @@ export async function POST(request: NextRequest) {
       // Create quiz
       const quiz = await tx.quiz.create({
         data: {
-          title: validatedData.title || 'AI Generated Quiz',
-          description: validatedData.description,
+          title: generatedData.title || validatedData.title || 'AI Generated Quiz',
+          description: generatedData.description || validatedData.description,
           createdBy: user.id,
           visibility: 'hidden',
           status: 'draft',

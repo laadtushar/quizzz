@@ -15,10 +15,10 @@ import {
 } from 'lucide-react'
 
 const guestNavItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/quizzes', label: 'Quizzes', icon: BookOpen },
-  { href: '/dashboard/assignments', label: 'My Assignments', icon: ClipboardList },
-  { href: '/dashboard/leaderboard', label: 'Leaderboard', icon: Trophy },
+  { href: '/dashboard/guest', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/guest/quizzes', label: 'Quizzes', icon: BookOpen },
+  { href: '/dashboard/guest/assignments', label: 'My Assignments', icon: ClipboardList },
+  { href: '/dashboard/guest/leaderboard', label: 'Leaderboard', icon: Trophy },
 ]
 
 const adminNavItems = [

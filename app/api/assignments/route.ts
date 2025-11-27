@@ -98,30 +98,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Create assignments (avoid duplicates)
-    const assignments = await prisma.$transaction(
-      validatedData.userIds.map((userId) =>
-        prisma.assignment.upsert({
+    const assignments = await prisma.$transaction(async (tx) => {
+      const results = []
+      for (const userId of validatedData.userIds) {
+        // Check if assignment already exists
+        const existing = await tx.assignment.findFirst({
           where: {
-            quizId_assignedTo: {
-              quizId: validatedData.quizId,
-              assignedTo: userId,
-            },
-          },
-          update: {
-            dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-            status: 'pending',
-            reminderSent: false,
-          },
-          create: {
             quizId: validatedData.quizId,
             assignedTo: userId,
-            assignedBy: user.id,
-            dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-            status: 'pending',
           },
         })
-      )
-    )
+
+        if (existing) {
+          // Update existing assignment
+          results.push(
+            await tx.assignment.update({
+              where: { id: existing.id },
+              data: {
+                dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
+                status: 'pending',
+                reminderSent: false,
+              },
+            })
+          )
+        } else {
+          // Create new assignment
+          results.push(
+            await tx.assignment.create({
+              data: {
+                quizId: validatedData.quizId,
+                assignedTo: userId,
+                assignedBy: user.id,
+                dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
+                status: 'pending',
+              },
+            })
+          )
+        }
+      }
+      return results
+    })
 
     return NextResponse.json({ assignments }, { status: 201 })
   } catch (error) {

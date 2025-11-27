@@ -34,7 +34,13 @@ export const createQuizSchema = z.object({
   questions: z.array(questionSchema).optional(),
 })
 
-export const updateQuizSchema = createQuizSchema.partial()
+export const updateQuizSchema = createQuizSchema.partial().extend({
+  // Allow flat structure for direct updates
+  settingsTimerSeconds: z.number().int().positive().nullable().optional(),
+  settingsAllowRetries: z.boolean().optional(),
+  settingsDifficultyLevel: z.enum(['easy', 'medium', 'hard']).optional(),
+  settingsPassingScore: z.number().min(0).max(100).nullable().optional(),
+})
 
 export const createQuestionSchema = questionSchema.omit({ orderIndex: true })
 

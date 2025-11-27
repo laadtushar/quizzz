@@ -16,6 +16,7 @@ Requirements:
 - Each question must have a clear, unambiguous correct answer
 - Include explanations for each answer
 - Questions should test understanding, not just memorization
+- Generate an appropriate title and description for the quiz based on the content
 
 For each question type:
 - MCQ: Provide 4 options, exactly one correct
@@ -26,6 +27,8 @@ For each question type:
 
 Return ONLY valid JSON in this exact format:
 {
+  "title": "A concise, descriptive title for the quiz (3-8 words)",
+  "description": "A brief description of what the quiz covers (1-2 sentences)",
   "questions": [
     {
       "type": "mcq" | "multiple_select" | "true_false" | "ordering" | "fill_blank",
@@ -45,6 +48,6 @@ For correctAnswer format:
 - Ordering: array of optionIds in correct order like ["A", "B", "C", "D"]
 - Fill-blank: string (the correct answer text)
 
-Generate the questions now:`
+Generate the quiz with title, description, and questions now:`
 }
 

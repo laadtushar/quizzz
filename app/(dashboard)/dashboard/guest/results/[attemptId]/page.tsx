@@ -54,7 +54,7 @@ export default function ResultsPage() {
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold">
-                {attempt.percentage?.toFixed(1)}%
+                {attempt.percentage != null ? Number(attempt.percentage).toFixed(1) : '0.0'}%
               </div>
               <div className="text-sm text-muted-foreground">Percentage</div>
             </div>

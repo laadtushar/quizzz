@@ -67,7 +67,7 @@ export default function GuestDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.averageScore?.toFixed(1) || '0'}%
+              {stats?.averageScore != null ? Number(stats.averageScore).toFixed(1) : '0.0'}%
             </div>
             <p className="text-xs text-muted-foreground">Across all quizzes</p>
           </CardContent>

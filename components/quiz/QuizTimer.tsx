@@ -14,12 +14,27 @@ interface QuizTimerProps {
 export function QuizTimer({ totalSeconds, onExpire, className }: QuizTimerProps) {
   const [secondsRemaining, setSecondsRemaining] = useState(totalSeconds)
   const [isExpired, setIsExpired] = useState(false)
+  const [showWarning, setShowWarning] = useState(false)
+  const [showUrgentWarning, setShowUrgentWarning] = useState(false)
 
   useEffect(() => {
     if (secondsRemaining <= 0) {
       setIsExpired(true)
       onExpire?.()
       return
+    }
+
+    // Show warning at 2 minutes (120 seconds)
+    if (secondsRemaining <= 120 && secondsRemaining > 30) {
+      setShowWarning(true)
+      setShowUrgentWarning(false)
+    } else if (secondsRemaining <= 30) {
+      // Show urgent warning at 30 seconds
+      setShowWarning(false)
+      setShowUrgentWarning(true)
+    } else {
+      setShowWarning(false)
+      setShowUrgentWarning(false)
     }
 
     const interval = setInterval(() => {
@@ -40,11 +55,11 @@ export function QuizTimer({ totalSeconds, onExpire, className }: QuizTimerProps)
   const seconds = secondsRemaining % 60
   const percentage = (secondsRemaining / totalSeconds) * 100
 
-  const isWarning = percentage < 20
-  const isCritical = percentage < 10
+  const isWarning = showWarning || showUrgentWarning
+  const isCritical = showUrgentWarning
 
   return (
-    <Card className={cn('p-4', className)}>
+    <Card className={cn('p-4', className, isCritical && 'border-red-500', isWarning && !isCritical && 'border-yellow-500')}>
       <div className="flex items-center gap-3">
         <Clock className={cn(
           'h-5 w-5',
@@ -56,12 +71,22 @@ export function QuizTimer({ totalSeconds, onExpire, className }: QuizTimerProps)
             <span className="text-sm font-medium">Time Remaining</span>
             <span className={cn(
               'text-lg font-bold',
-              isCritical && 'text-red-600',
+              isCritical && 'text-red-600 animate-pulse',
               isWarning && !isCritical && 'text-yellow-600'
             )}>
               {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
             </span>
           </div>
+          {showUrgentWarning && (
+            <p className="text-xs text-red-600 font-medium mb-1">
+              ⚠️ Less than 30 seconds remaining!
+            </p>
+          )}
+          {showWarning && !showUrgentWarning && (
+            <p className="text-xs text-yellow-600 font-medium mb-1">
+              ⚠️ Less than 2 minutes remaining
+            </p>
+          )}
           <div className="w-full bg-muted rounded-full h-2">
             <div
               className={cn(

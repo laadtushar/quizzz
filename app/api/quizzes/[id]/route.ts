@@ -65,6 +65,8 @@ export async function PATCH(
     if (validatedData.visibility !== undefined) updateData.visibility = validatedData.visibility
     if (validatedData.status !== undefined) updateData.status = validatedData.status
     if (validatedData.tags !== undefined) updateData.tags = validatedData.tags
+    
+    // Handle settings - support both nested and flat structure
     if (validatedData.settings) {
       if (validatedData.settings.timerSeconds !== undefined) {
         updateData.settingsTimerSeconds = validatedData.settings.timerSeconds
@@ -78,6 +80,20 @@ export async function PATCH(
       if (validatedData.settings.passingScore !== undefined) {
         updateData.settingsPassingScore = validatedData.settings.passingScore
       }
+    }
+    
+    // Also support flat structure (for direct updates from form)
+    if (validatedData.settingsTimerSeconds !== undefined) {
+      updateData.settingsTimerSeconds = validatedData.settingsTimerSeconds
+    }
+    if (validatedData.settingsAllowRetries !== undefined) {
+      updateData.settingsAllowRetries = validatedData.settingsAllowRetries
+    }
+    if (validatedData.settingsDifficultyLevel !== undefined) {
+      updateData.settingsDifficultyLevel = validatedData.settingsDifficultyLevel
+    }
+    if (validatedData.settingsPassingScore !== undefined) {
+      updateData.settingsPassingScore = validatedData.settingsPassingScore
     }
 
     const quiz = await prisma.quiz.update({

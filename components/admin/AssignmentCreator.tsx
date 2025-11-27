@@ -46,8 +46,13 @@ export function AssignmentCreator() {
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm<AssignmentForm>({
     resolver: zodResolver(createAssignmentSchema),
+    defaultValues: {
+      quizId: '',
+      dueDate: null,
+    },
   })
 
   const createMutation = useMutation({
@@ -69,8 +74,10 @@ export function AssignmentCreator() {
         description: 'Assignment created successfully',
       })
       setSelectedUserIds([])
-      setValue('quizId', '')
-      setValue('dueDate', undefined)
+      reset({
+        quizId: '',
+        dueDate: null,
+      })
     },
     onError: (error: Error) => {
       toast({
@@ -82,6 +89,18 @@ export function AssignmentCreator() {
   })
 
   const onSubmit = (data: AssignmentForm) => {
+    console.log('Form submitted with data:', data)
+    console.log('Selected user IDs:', selectedUserIds)
+    
+    if (!data.quizId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a quiz',
+        variant: 'destructive',
+      })
+      return
+    }
+    
     if (selectedUserIds.length === 0) {
       toast({
         title: 'Error',
@@ -90,7 +109,62 @@ export function AssignmentCreator() {
       })
       return
     }
-    createMutation.mutate({ ...data, userIds: selectedUserIds })
+    
+    // Convert datetime-local format to ISO string
+    let dueDate: string | null = data.dueDate || null
+    
+    // Handle empty string
+    if (dueDate === '' || (typeof dueDate === 'string' && dueDate.trim() === '')) {
+      dueDate = null
+    } else if (dueDate && typeof dueDate === 'string') {
+      try {
+        // datetime-local returns "YYYY-MM-DDTHH:mm", convert to ISO
+        if (dueDate.includes('T') && !dueDate.includes('Z') && !dueDate.includes('+')) {
+          // Parse the datetime-local string and convert to ISO
+          const date = new Date(dueDate)
+          if (isNaN(date.getTime())) {
+            toast({
+              title: 'Error',
+              description: 'Invalid date format. Please use the date picker.',
+              variant: 'destructive',
+            })
+            return
+          }
+          dueDate = date.toISOString()
+        } else if (!dueDate.includes('Z') && !dueDate.includes('+')) {
+          // Try to parse as date and convert to ISO
+          const date = new Date(dueDate)
+          if (isNaN(date.getTime())) {
+            toast({
+              title: 'Error',
+              description: 'Invalid date format. Please use the date picker.',
+              variant: 'destructive',
+            })
+            return
+          }
+          dueDate = date.toISOString()
+        }
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Invalid date format. Please use the date picker.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+    
+    console.log('Submitting assignment with:', { ...data, dueDate, userIds: selectedUserIds })
+    createMutation.mutate({ ...data, dueDate, userIds: selectedUserIds })
+  }
+  
+  const onError = (errors: any) => {
+    console.log('Form validation errors:', errors)
+    toast({
+      title: 'Validation Error',
+      description: 'Please check the form and fix any errors.',
+      variant: 'destructive',
+    })
   }
 
   const toggleUser = (userId: string) => {
@@ -110,14 +184,17 @@ export function AssignmentCreator() {
         <CardTitle>Create Assignment</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="quizId">Quiz *</Label>
             <Select
-              onValueChange={(value) => setValue('quizId', value)}
-              value={watch('quizId')}
+              onValueChange={(value) => {
+                console.log('Quiz selected:', value)
+                setValue('quizId', value, { shouldValidate: true })
+              }}
+              value={watch('quizId') || ''}
             >
-              <SelectTrigger>
+              <SelectTrigger id="quizId">
                 <SelectValue placeholder="Select a quiz" />
               </SelectTrigger>
               <SelectContent>
@@ -130,6 +207,9 @@ export function AssignmentCreator() {
             </Select>
             {errors.quizId && (
               <p className="text-sm text-destructive">{errors.quizId.message as string}</p>
+            )}
+            {!watch('quizId') && (
+              <p className="text-sm text-muted-foreground">Please select a quiz</p>
             )}
           </div>
 
@@ -168,17 +248,45 @@ export function AssignmentCreator() {
             <Input
               id="dueDate"
               type="datetime-local"
-              {...register('dueDate')}
+              {...register('dueDate', {
+                setValueAs: (value) => {
+                  if (!value || value === '') return null
+                  return value
+                },
+              })}
             />
             {errors.dueDate && (
-              <p className="text-sm text-destructive">{errors.dueDate.message as string}</p>
+              <p className="text-sm text-destructive">
+                {errors.dueDate.message as string || 'Invalid datetime format'}
+              </p>
             )}
           </div>
 
           <Button
             type="submit"
             className="w-full"
-            disabled={createMutation.isPending || selectedUserIds.length === 0}
+            disabled={createMutation.isPending || selectedUserIds.length === 0 || !watch('quizId')}
+            onClick={(e) => {
+              console.log('Button clicked')
+              console.log('Quiz ID:', watch('quizId'))
+              console.log('Selected users:', selectedUserIds)
+              console.log('Form errors:', errors)
+              if (!watch('quizId')) {
+                e.preventDefault()
+                toast({
+                  title: 'Error',
+                  description: 'Please select a quiz',
+                  variant: 'destructive',
+                })
+              } else if (selectedUserIds.length === 0) {
+                e.preventDefault()
+                toast({
+                  title: 'Error',
+                  description: 'Please select at least one user',
+                  variant: 'destructive',
+                })
+              }
+            }}
           >
             {createMutation.isPending ? 'Creating...' : 'Create Assignment'}
           </Button>
