@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { generateQuizSchema } from '@/lib/validations/ai-generation'
 import { generateQuiz } from '@/lib/ai/generateQuiz'
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
               type: q.type,
               questionText: q.questionText,
               points: q.points,
-              options: q.options || null,
+              options: q.options ? q.options : Prisma.JsonNull,
               correctAnswer: q.correctAnswer,
               explanation: q.explanation || null,
             })),
