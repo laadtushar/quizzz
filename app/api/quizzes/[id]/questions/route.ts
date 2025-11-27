@@ -30,7 +30,7 @@ export async function POST(
         questionText: validatedData.questionText,
         points: validatedData.points,
         options: validatedData.options ? validatedData.options : Prisma.JsonNull,
-        correctAnswer: validatedData.correctAnswer,
+        correctAnswer: validatedData.correctAnswer ? validatedData.correctAnswer : Prisma.JsonNull,
         explanation: validatedData.explanation,
         imageUrl: validatedData.imageUrl,
       },

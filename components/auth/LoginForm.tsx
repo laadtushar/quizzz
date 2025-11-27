@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { loginSchema } from '@/lib/validations/auth'
+import { loginSchema, type LoginInput } from '@/lib/validations/auth'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
@@ -22,11 +22,11 @@ export function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
+  } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = async (data: { email: string; password: string }) => {
+  const onSubmit: SubmitHandler<LoginInput> = async (data) => {
     setIsLoading(true)
     try {
       await login(data.email, data.password)

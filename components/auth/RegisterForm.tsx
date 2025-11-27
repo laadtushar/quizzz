@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { registerSchema } from '@/lib/validations/auth'
+import { registerSchema, type RegisterInput } from '@/lib/validations/auth'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
@@ -22,11 +22,11 @@ export function RegisterForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
+  } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
   })
 
-  const onSubmit = async (data: { email: string; password: string; displayName: string }) => {
+  const onSubmit: SubmitHandler<RegisterInput> = async (data) => {
     setIsLoading(true)
     try {
       await registerUser(data.email, data.password, data.displayName)

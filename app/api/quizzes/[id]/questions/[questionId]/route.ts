@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/middleware'
 import { updateQuestionSchema } from '@/lib/validations/quiz'
 
@@ -25,8 +26,12 @@ export async function PATCH(
     if (validatedData.type !== undefined) updateData.type = validatedData.type
     if (validatedData.questionText !== undefined) updateData.questionText = validatedData.questionText
     if (validatedData.points !== undefined) updateData.points = validatedData.points
-    if (validatedData.options !== undefined) updateData.options = validatedData.options
-    if (validatedData.correctAnswer !== undefined) updateData.correctAnswer = validatedData.correctAnswer
+    if (validatedData.options !== undefined) {
+      updateData.options = validatedData.options ? validatedData.options : Prisma.JsonNull
+    }
+    if (validatedData.correctAnswer !== undefined) {
+      updateData.correctAnswer = validatedData.correctAnswer ? validatedData.correctAnswer : Prisma.JsonNull
+    }
     if (validatedData.explanation !== undefined) updateData.explanation = validatedData.explanation
     if (validatedData.imageUrl !== undefined) updateData.imageUrl = validatedData.imageUrl
     if (validatedData.orderIndex !== undefined) updateData.orderIndex = validatedData.orderIndex

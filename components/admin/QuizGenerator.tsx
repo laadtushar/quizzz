@@ -30,9 +30,12 @@ export function QuizGenerator() {
   } = useForm({
     resolver: zodResolver(generateQuizSchema),
     defaultValues: {
+      inputText: '',
       questionCount: 10,
       difficulty: 'medium' as const,
       questionTypes: ['mcq'],
+      title: '',
+      description: '',
     },
   })
 
@@ -99,8 +102,8 @@ export function QuizGenerator() {
             <Label htmlFor="title">Quiz Title (Optional)</Label>
             <Input
               id="title"
-              {...register('title')}
-              placeholder="Enter quiz title"
+              {...register('title', { required: false })}
+              placeholder="Enter quiz title (optional)"
             />
           </div>
 

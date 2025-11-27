@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
               questionText: q.questionText,
               points: q.points,
               options: q.options ? q.options : Prisma.JsonNull,
-              correctAnswer: q.correctAnswer,
+              correctAnswer: q.correctAnswer ? q.correctAnswer : Prisma.JsonNull,
               explanation: q.explanation || null,
             })),
           },
