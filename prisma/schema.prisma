@@ -53,16 +53,19 @@ enum AIGenerationStatus {
 }
 
 model User {
-  id               String    @id @default(uuid())
-  email            String    @unique @db.VarChar(255)
-  passwordHash     String    @map("password_hash") @db.VarChar(255)
-  displayName      String    @map("display_name") @db.VarChar(255)
-  role             UserRole  @default(guest)
-  totalXp          Int       @default(0) @map("total_xp")
-  quizzesCompleted Int       @default(0) @map("quizzes_completed")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  lastLoginAt      DateTime? @map("last_login_at")
-  avatarUrl        String?   @map("avatar_url")
+  id                      String    @id @default(uuid())
+  email                   String    @unique @db.VarChar(255)
+  passwordHash            String    @map("password_hash") @db.VarChar(255)
+  displayName             String    @map("display_name") @db.VarChar(255)
+  role                    UserRole  @default(guest)
+  totalXp                 Int       @default(0) @map("total_xp")
+  quizzesCompleted        Int       @default(0) @map("quizzes_completed")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  lastLoginAt             DateTime? @map("last_login_at")
+  avatarUrl               String?   @map("avatar_url")
+  emailVerified           Boolean   @default(false) @map("email_verified")
+  emailVerificationToken  String?   @unique @map("email_verification_token") @db.VarChar(255)
+  emailVerificationExpiry DateTime? @map("email_verification_expiry")
 
   // Relations
   sessions         Session[]

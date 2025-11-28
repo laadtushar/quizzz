@@ -4,6 +4,8 @@ import { hashPassword } from '@/lib/auth/password'
 import { createSession, setSessionCookie } from '@/lib/auth/session'
 import { hasAlsoitEmail } from '@/lib/auth/middleware'
 import { registerSchema } from '@/lib/validations/auth'
+import { generateVerificationToken, getVerificationExpiry } from '@/lib/auth/email-verification'
+import { sendEmailVerification } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +41,10 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await hashPassword(validatedData.password)
 
+    // Generate email verification token
+    const verificationToken = generateVerificationToken()
+    const verificationExpiry = getVerificationExpiry()
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -46,7 +52,20 @@ export async function POST(request: NextRequest) {
         passwordHash,
         displayName: validatedData.displayName,
         role,
+        emailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiry: verificationExpiry,
       },
+    })
+
+    // Send verification email
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`
+    
+    await sendEmailVerification({
+      email: user.email,
+      displayName: user.displayName,
+      verificationLink,
     })
 
     // Create session

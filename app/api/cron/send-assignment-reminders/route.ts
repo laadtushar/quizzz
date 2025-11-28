@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
+import { sendAssignmentReminder } from '@/lib/email/sender'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +42,30 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Mark reminders as sent
+    // Send email notifications
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    let emailsSent = 0
+    let emailsFailed = 0
+
+    for (const assignment of assignments) {
+      const assignmentLink = `${appUrl}/dashboard/guest/quizzes/${assignment.quizId}`
+      
+      const emailSent = await sendAssignmentReminder({
+        email: assignment.user.email,
+        displayName: assignment.user.displayName,
+        quizTitle: assignment.quiz.title,
+        dueDate: assignment.dueDate,
+        assignmentLink,
+      })
+
+      if (emailSent) {
+        emailsSent++
+      } else {
+        emailsFailed++
+      }
+    }
+
+    // Mark reminders as sent (even if email failed, to avoid spam)
     await prisma.assignment.updateMany({
       where: {
         id: { in: assignments.map((a) => a.id) },
@@ -51,9 +75,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // TODO: Send email notifications
-    // For now, just log
-    console.log(`Sent reminders for ${assignments.length} assignments`)
+    console.log(`Sent ${emailsSent} reminders, ${emailsFailed} failed for ${assignments.length} assignments`)
 
     return NextResponse.json({
       success: true,

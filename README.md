@@ -51,6 +51,8 @@ AI-powered training and engagement platform built with Next.js 14, Supabase Post
    - `NEXT_PUBLIC_APP_URL`: Your app URL (e.g., http://localhost:3000)
    - `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN`: Email domain restriction (e.g., @alsoit.com)
    - `CRON_SECRET`: Generate with `openssl rand -base64 32`
+   - `GMAIL_USER`: Your Gmail address for sending emails
+   - `GMAIL_APP_PASSWORD`: Gmail App Password (see `docs/EMAIL_SETUP.md` for setup)
 
 4. Set up Supabase database:
    - Follow the detailed guide in `SUPABASE_SETUP.md`
