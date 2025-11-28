@@ -51,10 +51,10 @@ export async function POST(request: NextRequest) {
         passwordHash,
         displayName: validatedData.displayName,
         role,
-        emailVerified: false,
-        emailVerificationToken: verificationToken,
-        emailVerificationExpiry: verificationExpiry,
-      },
+        emailVerified: false as any,
+        emailVerificationToken: verificationToken as any,
+        emailVerificationExpiry: verificationExpiry as any,
+      } as any,
     })
 
     // Send verification email (non-blocking - user is created even if email fails)

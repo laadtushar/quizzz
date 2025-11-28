@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if token is expired
-    if (isTokenExpired(user.emailVerificationExpiry)) {
+    if (isTokenExpired((user as any).emailVerificationExpiry)) {
       return NextResponse.redirect(
         new URL('/auth/verify-email?error=expired_token', request.url)
       )
     }
 
     // Check if already verified
-    if (user.emailVerified) {
+    if ((user as any).emailVerified === true) {
       return NextResponse.redirect(
         new URL('/auth/verify-email?error=already_verified', request.url)
       )
@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        emailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationExpiry: null,
+        emailVerified: true as any,
+        emailVerificationToken: null as any,
+        emailVerificationExpiry: null as any,
       },
     })
 

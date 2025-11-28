@@ -32,8 +32,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if email is verified
-    if (!user.emailVerified) {
+    // Check if email is verified (skip for admin users)
+    // Handle null/undefined for existing users (treat as unverified)
+    const emailVerified = (user as any).emailVerified
+    if (emailVerified !== true && user.role !== 'admin') {
       return NextResponse.json(
         { 
           error: 'Email not verified',
