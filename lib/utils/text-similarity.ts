@@ -201,15 +201,19 @@ function checkCommonVariations(userAnswer: string, correctAnswer: string): boole
 export function isSimilarAnswerWithVariations(
   userAnswer: string,
   correctAnswer: string,
-  threshold: number = 0.80 // Lowered to 80% to be more lenient with stop words
+  threshold: number = 0.75 // Lowered to 75% to be more lenient with variations
 ): boolean {
   if (!userAnswer || !correctAnswer) {
     return false
   }
 
+  // Trim whitespace
+  const trimmedUser = userAnswer.trim()
+  const trimmedCorrect = correctAnswer.trim()
+
   // First check exact match after normalization (removes stop words, punctuation, case)
-  const tokens1 = tokenize(userAnswer)
-  const tokens2 = tokenize(correctAnswer)
+  const tokens1 = tokenize(trimmedUser)
+  const tokens2 = tokenize(trimmedCorrect)
   
   if (tokens1.length === 0 && tokens2.length === 0) {
     return true
@@ -219,17 +223,30 @@ export function isSimilarAnswerWithVariations(
   if (tokens1.length > 0 && tokens2.length > 0) {
     const set1 = new Set(tokens1)
     const set2 = new Set(tokens2)
+    // Check if all tokens match (handles word order differences)
     if (set1.size === set2.size && [...set1].every(x => set2.has(x))) {
       return true
+    }
+    
+    // Also check if one set is a subset of the other (for cases like "port adapter" vs "ports and adapter")
+    // If all tokens from the smaller set are in the larger set, consider it a match
+    const smallerSet = set1.size <= set2.size ? set1 : set2
+    const largerSet = set1.size <= set2.size ? set2 : set1
+    if ([...smallerSet].every(x => largerSet.has(x))) {
+      // Only accept if the difference is small (e.g., singular/plural)
+      const sizeDiff = Math.abs(set1.size - set2.size)
+      if (sizeDiff <= 1) {
+        return true
+      }
     }
   }
 
   // Check common variations (singular/plural)
-  if (checkCommonVariations(userAnswer, correctAnswer)) {
+  if (checkCommonVariations(trimmedUser, trimmedCorrect)) {
     return true
   }
 
   // Check similarity score (Jaccard + Levenshtein combined)
-  return isSimilarAnswer(userAnswer, correctAnswer, threshold)
+  return isSimilarAnswer(trimmedUser, trimmedCorrect, threshold)
 }
 

@@ -38,7 +38,22 @@ export function scoreQuestion(question: Question, userAnswer: any): boolean {
         userBool = Boolean(userAnswer)
       }
       
-      const correctBool = Boolean(question.correctAnswer)
+      // Handle correctAnswer - could be boolean, string "true"/"false", or JSON string
+      // Prisma returns JSON fields as parsed objects, but handle all cases for safety
+      let correctBool: boolean
+      if (question.correctAnswer === null || question.correctAnswer === undefined) {
+        correctBool = false
+      } else if (typeof question.correctAnswer === 'string') {
+        // Handle string "true"/"false" or JSON-encoded strings like '"true"'
+        const lower = question.correctAnswer.toLowerCase().trim()
+        correctBool = lower === 'true' || lower === '"true"'
+      } else if (typeof question.correctAnswer === 'boolean') {
+        correctBool = question.correctAnswer
+      } else {
+        // Fallback: convert to boolean
+        correctBool = Boolean(question.correctAnswer)
+      }
+      
       return userBool === correctBool
 
     case 'multiple_select':
@@ -58,10 +73,11 @@ export function scoreQuestion(question: Question, userAnswer: any): boolean {
 
     case 'fill_blank':
       // Use similarity-based evaluation to handle variations like singular/plural, stop words, etc.
+      // Lower threshold to 0.75 to be more lenient with variations like "ports" vs "port"
       return isSimilarAnswerWithVariations(
-        String(userAnswer || ''),
-        String(question.correctAnswer || ''),
-        0.80 // 80% similarity threshold (handles stop words like "and", "or", etc.)
+        String(userAnswer || '').trim(),
+        String(question.correctAnswer || '').trim(),
+        0.75 // 75% similarity threshold (handles stop words, singular/plural, etc.)
       )
 
     default:

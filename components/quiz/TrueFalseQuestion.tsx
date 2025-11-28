@@ -10,7 +10,7 @@ interface Question {
   id: string
   questionText: string
   points: number
-  correctAnswer?: boolean
+  correctAnswer?: boolean | string | null // Can be boolean, string, or null
   explanation?: string | null
 }
 
@@ -33,7 +33,24 @@ export function TrueFalseQuestion({
     onChange?.(val === 'true')
   }
 
-  const isCorrect = value === question.correctAnswer
+  // Handle correctAnswer comparison - match scoring logic
+  // correctAnswer could be boolean, string "true"/"false", or JSON string
+  const getCorrectAnswerBool = (): boolean => {
+    const correctAnswer = question.correctAnswer
+    if (correctAnswer === null || correctAnswer === undefined) {
+      return false
+    }
+    if (typeof correctAnswer === 'string') {
+      const lower = correctAnswer.toLowerCase().trim()
+      return lower === 'true' || lower === '"true"'
+    }
+    if (typeof correctAnswer === 'boolean') {
+      return correctAnswer
+    }
+    return Boolean(correctAnswer)
+  }
+
+  const isCorrect = showAnswer && value !== undefined && value === getCorrectAnswerBool()
   const showCorrectness = showAnswer && value !== undefined
 
   return (

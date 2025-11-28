@@ -44,7 +44,10 @@ export async function POST(
       )
     }
 
-    // Score the attempt - cast questions to match expected type
+    // Score the attempt
+    // Note: Prisma returns JSON fields as parsed objects, not strings
+    // So correctAnswer should already be in the correct format (boolean, string, array, etc.)
+    // But we ensure it's properly handled for edge cases
     const scoredAnswers = scoreAttempt(attempt.quiz.questions as any, answers)
     const totalScore = scoredAnswers.reduce((sum, a) => sum + a.pointsEarned, 0)
     const percentage = (totalScore / attempt.maxScore) * 100

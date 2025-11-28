@@ -30,10 +30,11 @@ export function FillBlankQuestion({
   showAnswer = false,
 }: FillBlankQuestionProps) {
   // Use similarity-based evaluation to match the scoring logic
-  const isCorrect = showAnswer && isSimilarAnswerWithVariations(
-    value,
-    String(question.correctAnswer || ''),
-    0.85
+  // Use the same threshold as scoring (0.75) to ensure consistency
+  const isCorrect = showAnswer && value && isSimilarAnswerWithVariations(
+    String(value || '').trim(),
+    String(question.correctAnswer || '').trim(),
+    0.75 // Match scoring threshold
   )
 
   return (
