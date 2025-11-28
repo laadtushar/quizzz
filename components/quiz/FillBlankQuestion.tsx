@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isSimilarAnswerWithVariations } from '@/lib/utils/text-similarity'
 
 interface Question {
   id: string
@@ -28,7 +29,12 @@ export function FillBlankQuestion({
   disabled = false,
   showAnswer = false,
 }: FillBlankQuestionProps) {
-  const isCorrect = showAnswer && value.trim().toLowerCase() === String(question.correctAnswer || '').trim().toLowerCase()
+  // Use similarity-based evaluation to match the scoring logic
+  const isCorrect = showAnswer && isSimilarAnswerWithVariations(
+    value,
+    String(question.correctAnswer || ''),
+    0.85
+  )
 
   return (
     <Card>

@@ -1,4 +1,5 @@
 import { QuestionType } from '@prisma/client'
+import { isSimilarAnswerWithVariations } from '@/lib/utils/text-similarity'
 
 interface Question {
   id: string
@@ -46,9 +47,12 @@ export function scoreQuestion(question: Question, userAnswer: any): boolean {
       return JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)
 
     case 'fill_blank':
-      const userAnswerStr = String(userAnswer).trim().toLowerCase()
-      const correctAnswerStr = String(question.correctAnswer).trim().toLowerCase()
-      return userAnswerStr === correctAnswerStr
+      // Use similarity-based evaluation to handle variations like singular/plural
+      return isSimilarAnswerWithVariations(
+        String(userAnswer || ''),
+        String(question.correctAnswer || ''),
+        0.85 // 85% similarity threshold
+      )
 
     default:
       return false

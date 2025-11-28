@@ -95,6 +95,24 @@ export function MultipleSelectQuestion({
             })}
           </div>
 
+          {showAnswer && value.length > 0 && (() => {
+            const selectedOptions = options.filter((opt) => value.includes(opt.id))
+            const correctOptions = options.filter((opt) => opt.isCorrect)
+            const allCorrect = correctOptions.every((opt) => value.includes(opt.id)) && 
+                              selectedOptions.every((opt) => opt.isCorrect) &&
+                              selectedOptions.length === correctOptions.length
+            return !allCorrect ? (
+              <div className="mt-4 rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <p className="text-sm font-medium mb-2 text-blue-900">Correct Answer(s):</p>
+                <div className="text-sm text-blue-800 space-y-1">
+                  {correctOptions.map((opt) => (
+                    <div key={opt.id}>• {opt.text}</div>
+                  ))}
+                </div>
+              </div>
+            ) : null
+          })()}
+
           {showAnswer && question.explanation && (
             <div className="mt-4 rounded-lg bg-muted p-4">
               <p className="text-sm font-medium mb-1">Explanation:</p>

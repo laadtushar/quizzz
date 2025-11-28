@@ -31,6 +31,8 @@ export function MCQQuestion({
   showAnswer = false,
 }: MCQQuestionProps) {
   const options = question.options || []
+  const selectedOption = options.find((opt) => opt.id === value)
+  const isAnswerCorrect = selectedOption?.isCorrect ?? false
 
   return (
     <Card>
@@ -86,6 +88,15 @@ export function MCQQuestion({
               )
             })}
           </RadioGroup>
+
+          {showAnswer && value && !isAnswerCorrect && (
+            <div className="mt-4 rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <p className="text-sm font-medium mb-2 text-blue-900">Correct Answer:</p>
+              <div className="text-sm text-blue-800">
+                {options.find((opt) => opt.isCorrect)?.text || 'N/A'}
+              </div>
+            </div>
+          )}
 
           {showAnswer && question.explanation && (
             <div className="mt-4 rounded-lg bg-muted p-4">

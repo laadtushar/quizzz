@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { BookOpen, Search, Clock, Trophy, CheckCircle2, UserPlus } from 'lucide-react'
+import { BookOpen, Search, Clock, Trophy, CheckCircle2, UserPlus, BarChart3 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 
 export default function GuestQuizzesPage() {
@@ -225,33 +225,43 @@ export default function GuestQuizzesPage() {
                 )}
               </div>
 
-              <div className="flex gap-2">
-                {!assignedQuizIds.has(quiz.id) ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => selfAssignMutation.mutate(quiz.id)}
-                    disabled={selfAssignMutation.isPending}
-                  >
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    {selfAssignMutation.isPending ? 'Assigning...' : 'Assign to Me'}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled
-                    className="opacity-60"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Assigned
-                  </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  {!assignedQuizIds.has(quiz.id) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => selfAssignMutation.mutate(quiz.id)}
+                      disabled={selfAssignMutation.isPending}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      {selfAssignMutation.isPending ? 'Assigning...' : 'Assign to Me'}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled
+                      className="opacity-60"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Assigned
+                    </Button>
+                  )}
+                  <Link href={`/dashboard/guest/quizzes/${quiz.id}/take`} className="flex-1">
+                    <Button className="w-full" variant={quiz.isCompleted ? 'outline' : 'default'}>
+                      {quiz.isCompleted ? 'Retake Quiz' : 'Start Quiz'}
+                    </Button>
+                  </Link>
+                </div>
+                {quiz.isCompleted && quiz.latestAttemptId && (
+                  <Link href={`/dashboard/guest/results/${quiz.latestAttemptId}`} className="w-full">
+                    <Button variant="secondary" className="w-full" size="sm">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      View Results
+                    </Button>
+                  </Link>
                 )}
-                <Link href={`/dashboard/guest/quizzes/${quiz.id}/take`} className="flex-1">
-                  <Button className="w-full" variant={quiz.isCompleted ? 'outline' : 'default'}>
-                    {quiz.isCompleted ? 'Retake Quiz' : 'Start Quiz'}
-                  </Button>
-                </Link>
               </div>
             </CardContent>
           </Card>

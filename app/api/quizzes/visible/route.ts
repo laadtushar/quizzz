@@ -86,7 +86,12 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             percentage: true,
+            completedAt: true,
           },
+          orderBy: {
+            completedAt: 'desc',
+          },
+          take: 1, // Get the latest attempt
         },
       },
       orderBy,
@@ -119,12 +124,14 @@ export async function GET(request: NextRequest) {
         const userBestScore = userAttempts.length > 0
           ? Math.max(...userAttempts.map((a) => Number(a.percentage || 0)))
           : null
+        const latestAttemptId = userAttempts.length > 0 ? userAttempts[0].id : null
 
         return {
           ...quiz,
           averageScore: averageScore ? Math.round(averageScore * 100) / 100 : null,
           isCompleted,
           userBestScore,
+          latestAttemptId,
           estimatedTime: quiz.settingsTimerSeconds
             ? Math.floor(quiz.settingsTimerSeconds / 60)
             : null,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isTokenExpired } from '@/lib/auth/email-verification'
+import { getAppUrl } from '@/lib/utils/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,9 +11,8 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('token')
 
     if (!token) {
-      return NextResponse.redirect(
-        new URL('/auth/verify-email?error=missing_token', request.url)
-      )
+      const appUrl = getAppUrl(request)
+      return NextResponse.redirect(`${appUrl}/auth/verify-email?error=missing_token`)
     }
 
     // Find user by verification token
@@ -20,24 +20,20 @@ export async function GET(request: NextRequest) {
       where: { emailVerificationToken: token },
     })
 
+    const appUrl = getAppUrl(request)
+
     if (!user) {
-      return NextResponse.redirect(
-        new URL('/auth/verify-email?error=invalid_token', request.url)
-      )
+      return NextResponse.redirect(`${appUrl}/auth/verify-email?error=invalid_token`)
     }
 
     // Check if token is expired
     if (isTokenExpired((user as any).emailVerificationExpiry)) {
-      return NextResponse.redirect(
-        new URL('/auth/verify-email?error=expired_token', request.url)
-      )
+      return NextResponse.redirect(`${appUrl}/auth/verify-email?error=expired_token`)
     }
 
     // Check if already verified
     if ((user as any).emailVerified === true) {
-      return NextResponse.redirect(
-        new URL('/auth/verify-email?error=already_verified', request.url)
-      )
+      return NextResponse.redirect(`${appUrl}/auth/verify-email?error=already_verified`)
     }
 
     // Verify email
@@ -50,15 +46,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Redirect to success page or dashboard
-    return NextResponse.redirect(
-      new URL('/auth/verify-email?success=true', request.url)
-    )
+    // Redirect to success page
+    return NextResponse.redirect(`${appUrl}/auth/verify-email?success=true`)
   } catch (error) {
     console.error('Email verification error:', error)
-    return NextResponse.redirect(
-      new URL('/auth/verify-email?error=server_error', request.url)
-    )
+    const appUrl = getAppUrl(request)
+    return NextResponse.redirect(`${appUrl}/auth/verify-email?error=server_error`)
   }
 }
 

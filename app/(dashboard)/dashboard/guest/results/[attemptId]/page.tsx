@@ -108,30 +108,34 @@ export default function ResultsPage() {
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             <h2 className="text-xl font-semibold">Review Answers</h2>
             {questions.map((question: any, index: number) => {
               const answer = answers.find((a: any) => a.questionId === question.id)
               return (
-                <div key={question.id} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Question {index + 1}</span>
-                    {answer?.isCorrect ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-600" />
-                    )}
-                    <span className="text-sm text-muted-foreground">
-                      ({answer?.pointsEarned || 0}/{question.points} points)
-                    </span>
-                  </div>
-                  <QuestionRenderer
-                    question={question}
-                    value={answer?.userAnswer}
-                    disabled
-                    showAnswer
-                  />
-                </div>
+                <Card key={question.id} className="overflow-hidden">
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <span className="font-medium text-lg">Question {index + 1}</span>
+                        {answer?.isCorrect ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        )}
+                        <span className="text-sm text-muted-foreground ml-auto">
+                          {answer?.pointsEarned || 0}/{question.points} points
+                        </span>
+                      </div>
+                      <QuestionRenderer
+                        question={question}
+                        value={answer?.userAnswer}
+                        disabled
+                        showAnswer
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               )
             })}
           </div>

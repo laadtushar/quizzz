@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowUp, ArrowDown, CheckCircle2, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Question {
@@ -46,7 +46,8 @@ export function OrderingQuestion({
     onChange?.(newOrder)
   }
 
-  const isCorrect = showAnswer && JSON.stringify(currentOrder) === JSON.stringify(question.correctAnswer)
+  const correctOrder = question.correctAnswer || []
+  const isCorrect = showAnswer && JSON.stringify(currentOrder) === JSON.stringify(correctOrder)
 
   return (
     <Card>
@@ -61,22 +62,36 @@ export function OrderingQuestion({
           </div>
 
           <div className="space-y-2">
+            <p className="text-sm font-medium">Your Answer:</p>
             {currentOrder.map((optionId, index) => {
               const option = options.find((o) => o.id === optionId)
               if (!option) return null
+              
+              const correctIndex = correctOrder.indexOf(optionId)
+              const isInCorrectPosition = showAnswer && correctIndex === index
 
               return (
                 <div
                   key={optionId}
                   className={cn(
                     'flex items-center gap-2 rounded-lg border p-3',
-                    showAnswer && isCorrect && 'border-green-500 bg-green-50'
+                    showAnswer && isInCorrectPosition && 'border-green-500 bg-green-50',
+                    showAnswer && !isInCorrectPosition && 'border-red-500 bg-red-50'
                   )}
                 >
                   <span className="text-sm font-medium text-muted-foreground w-8">
                     {index + 1}.
                   </span>
                   <span className="flex-1">{option.text}</span>
+                  {showAnswer && (
+                    <>
+                      {isInCorrectPosition ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      )}
+                    </>
+                  )}
                   {!disabled && (
                     <div className="flex gap-1">
                       <Button
@@ -103,6 +118,30 @@ export function OrderingQuestion({
               )
             })}
           </div>
+
+          {showAnswer && !isCorrect && correctOrder.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm font-medium text-green-600">Correct Answer:</p>
+              <div className="space-y-2">
+                {correctOrder.map((optionId, index) => {
+                  const option = options.find((o) => o.id === optionId)
+                  if (!option) return null
+                  return (
+                    <div
+                      key={optionId}
+                      className="flex items-center gap-2 rounded-lg border border-green-500 bg-green-50 p-3"
+                    >
+                      <span className="text-sm font-medium text-muted-foreground w-8">
+                        {index + 1}.
+                      </span>
+                      <span className="flex-1">{option.text}</span>
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {showAnswer && question.explanation && (
             <div className="mt-4 rounded-lg bg-muted p-4">
