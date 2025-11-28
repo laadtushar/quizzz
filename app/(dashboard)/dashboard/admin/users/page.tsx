@@ -15,8 +15,10 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { format } from 'date-fns'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Users } from 'lucide-react'
 
 export default function UsersPage() {
   const { toast } = useToast()
@@ -69,11 +71,33 @@ export default function UsersPage() {
     updateRoleMutation.mutate({ userId, role: newRole })
   }
 
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
-
   const users = data?.users || []
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-32" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -161,11 +185,11 @@ export default function UsersPage() {
       </div>
 
       {users.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No users found.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Users}
+          title="No users found"
+          description="There are no users in the system yet."
+        />
       )}
     </div>
   )

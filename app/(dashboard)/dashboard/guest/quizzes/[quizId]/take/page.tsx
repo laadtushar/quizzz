@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ArrowLeft, ArrowRight, Check, Clock, FileQuestion, AlertCircle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Clock, FileQuestion, AlertCircle, Save } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 export default function TakeQuizPage() {
@@ -31,6 +31,7 @@ export default function TakeQuizPage() {
   const [startTime] = useState(Date.now())
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
   const [showPreQuizScreen, setShowPreQuizScreen] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Fetch quiz
   const { data: quizData, isLoading: quizLoading } = useQuery({
@@ -159,6 +160,58 @@ export default function TakeQuizPage() {
       }
     }
   }, [quizId, attemptData, showPreQuizScreen])
+
+  // Multiple tab prevention
+  useEffect(() => {
+    if (!showPreQuizScreen && attemptData?.attempt?.id) {
+      const channel = new BroadcastChannel(`quiz-${quizId}-${attemptData.attempt.id}`)
+      
+      // Listen for other tabs
+      channel.onmessage = (event) => {
+        if (event.data.type === 'quiz-active') {
+          toast({
+            title: 'Quiz Already Open',
+            description: 'This quiz is already open in another tab. Please close other tabs to continue.',
+            variant: 'destructive',
+          })
+        }
+      }
+
+      // Broadcast that this tab is active
+      const broadcastInterval = setInterval(() => {
+        channel.postMessage({ type: 'quiz-active', tabId: Date.now() })
+      }, 2000)
+
+      // Cleanup
+      return () => {
+        clearInterval(broadcastInterval)
+        channel.close()
+      }
+    }
+  }, [showPreQuizScreen, attemptData, quizId, toast])
+
+  // Handle Save & Exit
+  const handleSaveAndExit = async () => {
+    if (!attemptData?.attempt?.id) return
+    
+    setIsSaving(true)
+    try {
+      await saveMutation.mutateAsync(answers)
+      toast({
+        title: 'Progress Saved',
+        description: 'Your progress has been saved. You can resume later.',
+      })
+      router.push('/dashboard/guest/quizzes')
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save progress. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   // Prevent page refresh with warning
   useEffect(() => {
@@ -392,9 +445,19 @@ export default function TakeQuizPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{quiz.title}</h1>
-        {timerSeconds && (
-          <QuizTimer totalSeconds={timerSeconds} onExpire={handleTimerExpire} />
-        )}
+        <div className="flex items-center gap-2">
+          {timerSeconds && (
+            <QuizTimer totalSeconds={timerSeconds} onExpire={handleTimerExpire} />
+          )}
+          <Button
+            variant="outline"
+            onClick={handleSaveAndExit}
+            disabled={isSaving || saveMutation.isPending}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {isSaving || saveMutation.isPending ? 'Saving...' : 'Save & Exit'}
+          </Button>
+        </div>
       </div>
 
       <QuizProgressBar current={currentQuestionIndex + 1} total={questions.length} />

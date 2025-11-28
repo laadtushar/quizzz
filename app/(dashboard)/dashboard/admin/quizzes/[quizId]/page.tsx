@@ -11,6 +11,7 @@ import { QuestionList } from '@/components/admin/QuestionList'
 import { QuestionEditorDialog } from '@/components/admin/QuestionEditorDialog'
 import { QuizPreview } from '@/components/admin/QuizPreview'
 import { QuizResultsView } from '@/components/admin/QuizResultsView'
+import { BulkQuestionImporter } from '@/components/admin/BulkQuestionImporter'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/components/ui/use-toast'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Loader2, Save, Eye, Copy, Trash2, ArrowLeft, Download } from 'lucide-react'
 import Link from 'next/link'
 
@@ -208,8 +210,35 @@ export default function QuizEditPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <div className="space-y-2">
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -325,7 +354,14 @@ export default function QuizEditPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="questions">
+        <TabsContent value="questions" className="space-y-4">
+          <BulkQuestionImporter
+            quizId={quizId}
+            onSuccess={() => {
+              refetch()
+              queryClient.invalidateQueries({ queryKey: ['quiz', quizId] })
+            }}
+          />
           <QuestionList
             quizId={quizId}
             questions={quiz.questions || []}
