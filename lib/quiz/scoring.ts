@@ -29,7 +29,17 @@ export function scoreQuestion(question: Question, userAnswer: any): boolean {
       return userAnswer === question.correctAnswer
 
     case 'true_false':
-      return userAnswer === question.correctAnswer
+      // Handle both boolean and string representations
+      // Convert string "true"/"false" to boolean if needed
+      let userBool: boolean
+      if (typeof userAnswer === 'string') {
+        userBool = userAnswer.toLowerCase() === 'true'
+      } else {
+        userBool = Boolean(userAnswer)
+      }
+      
+      const correctBool = Boolean(question.correctAnswer)
+      return userBool === correctBool
 
     case 'multiple_select':
       if (!Array.isArray(userAnswer) || !Array.isArray(question.correctAnswer)) {
@@ -47,11 +57,11 @@ export function scoreQuestion(question: Question, userAnswer: any): boolean {
       return JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)
 
     case 'fill_blank':
-      // Use similarity-based evaluation to handle variations like singular/plural
+      // Use similarity-based evaluation to handle variations like singular/plural, stop words, etc.
       return isSimilarAnswerWithVariations(
         String(userAnswer || ''),
         String(question.correctAnswer || ''),
-        0.85 // 85% similarity threshold
+        0.80 // 80% similarity threshold (handles stop words like "and", "or", etc.)
       )
 
     default:

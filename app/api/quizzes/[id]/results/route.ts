@@ -252,6 +252,7 @@ export async function GET(
         }
 
         return {
+          attemptId: attempt.id, // Include attempt ID for admin actions
           userId: attempt.user.id,
           userName: attempt.user.displayName,
           userEmail: attempt.user.email,

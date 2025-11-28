@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,9 +19,19 @@ import {
   LineChart,
   Line,
 } from 'recharts'
-import { Loader2, Download } from 'lucide-react'
+import { Loader2, Download, Trash2, RotateCcw } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import { useToast } from '@/components/ui/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface QuizResultsViewProps {
   quizId: string
@@ -31,7 +41,10 @@ const COLORS = ['#22c55e', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6']
 
 export function QuizResultsView({ quizId }: QuizResultsViewProps) {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [isExporting, setIsExporting] = useState(false)
+  const [deleteAttemptId, setDeleteAttemptId] = useState<string | null>(null)
+  const [resetAttemptId, setResetAttemptId] = useState<string | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
 
   const { data, isLoading } = useQuery({
@@ -40,6 +53,64 @@ export function QuizResultsView({ quizId }: QuizResultsViewProps) {
       const res = await fetch(`/api/quizzes/${quizId}/results`)
       if (!res.ok) throw new Error('Failed to fetch results')
       return res.json()
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (attemptId: string) => {
+      const res = await fetch(`/api/attempts/${attemptId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to delete attempt')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quiz-results', quizId] })
+      toast({
+        title: 'Success',
+        description: 'Attempt deleted successfully',
+      })
+      setDeleteAttemptId(null)
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const resetMutation = useMutation({
+    mutationFn: async (attemptId: string) => {
+      const res = await fetch(`/api/attempts/${attemptId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to reset attempt')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quiz-results', quizId] })
+      toast({
+        title: 'Success',
+        description: 'Attempt reset successfully. User can now retake the quiz.',
+      })
+      setResetAttemptId(null)
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      })
     },
   })
 
@@ -347,6 +418,7 @@ export function QuizResultsView({ quizId }: QuizResultsViewProps) {
                             <th className="px-4 py-2 text-center">Status</th>
                             <th className="px-4 py-2 text-right">Points</th>
                             <th className="px-4 py-2 text-right">Completed</th>
+                            <th className="px-4 py-2 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -388,6 +460,28 @@ export function QuizResultsView({ quizId }: QuizResultsViewProps) {
                                   ? new Date(response.completedAt).toLocaleDateString()
                                   : '-'}
                               </td>
+                              <td className="px-4 py-2 text-right">
+                                {response.attemptId && (
+                                  <div className="flex gap-1 justify-end">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setResetAttemptId(response.attemptId)}
+                                      title="Reset attempt"
+                                    >
+                                      <RotateCcw className="h-4 w-4 text-blue-600" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setDeleteAttemptId(response.attemptId)}
+                                      title="Delete attempt"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -402,6 +496,56 @@ export function QuizResultsView({ quizId }: QuizResultsViewProps) {
       </div>
       </div>
       {/* End of exportable content */}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteAttemptId} onOpenChange={(open) => !open && setDeleteAttemptId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Attempt</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this attempt? This action cannot be undone.
+              The user&apos;s XP and quiz completion count will be adjusted accordingly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteAttemptId && deleteMutation.mutate(deleteAttemptId)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={!!resetAttemptId} onOpenChange={(open) => !open && setResetAttemptId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Attempt</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset this attempt? This will:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Reset the attempt back to &quot;in progress&quot;</li>
+                <li>Clear all answers and scores</li>
+                <li>Allow the user to retake the quiz</li>
+                <li>Adjust the user&apos;s XP and completion count</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => resetAttemptId && resetMutation.mutate(resetAttemptId)}
+              disabled={resetMutation.isPending}
+            >
+              {resetMutation.isPending ? 'Resetting...' : 'Reset Attempt'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

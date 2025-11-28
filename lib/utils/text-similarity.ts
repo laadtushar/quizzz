@@ -1,10 +1,21 @@
 /**
  * Text similarity utilities for evaluating fill-in-the-blank answers
- * Handles variations like singular/plural, case differences, spacing, etc.
+ * Handles variations like singular/plural, case differences, spacing, stop words, etc.
+ * Uses industry-standard similarity algorithms (Jaccard similarity + Levenshtein distance)
  */
 
 /**
- * Normalize text for comparison
+ * Common English stop words to ignore in comparison
+ */
+const STOP_WORDS = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from',
+  'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on', 'that', 'the',
+  'to', 'was', 'will', 'with', 'or', 'but', 'not', 'so', 'than',
+  'this', 'these', 'those', 'they', 'them', 'their', 'there'
+])
+
+/**
+ * Normalize text for comparison - removes stop words, punctuation, extra spaces
  */
 function normalizeText(text: string): string {
   return text
@@ -12,6 +23,41 @@ function normalizeText(text: string): string {
     .toLowerCase()
     .replace(/\s+/g, ' ') // Replace multiple spaces with single space
     .replace(/[^\w\s]/g, '') // Remove punctuation
+}
+
+/**
+ * Tokenize text into words, removing stop words
+ */
+function tokenize(text: string): string[] {
+  const normalized = normalizeText(text)
+  return normalized
+    .split(/\s+/)
+    .filter(word => word.length > 0 && !STOP_WORDS.has(word))
+}
+
+/**
+ * Calculate Jaccard similarity (intersection over union of word sets)
+ * This is industry-standard for text similarity
+ */
+function jaccardSimilarity(str1: string, str2: string): number {
+  const tokens1 = new Set(tokenize(str1))
+  const tokens2 = new Set(tokenize(str2))
+
+  if (tokens1.size === 0 && tokens2.size === 0) {
+    return 1.0
+  }
+
+  if (tokens1.size === 0 || tokens2.size === 0) {
+    return 0.0
+  }
+
+  // Calculate intersection
+  const intersection = new Set([...tokens1].filter(x => tokens2.has(x)))
+  
+  // Calculate union
+  const union = new Set([...tokens1, ...tokens2])
+
+  return intersection.size / union.size
 }
 
 /**
@@ -50,7 +96,8 @@ function levenshteinDistance(str1: string, str2: string): number {
 
 /**
  * Calculate similarity ratio between two strings (0-1)
- * 1.0 = identical, 0.0 = completely different
+ * Uses combined approach: Jaccard similarity (word-based) + Levenshtein (character-based)
+ * This is more industry-standard and handles stop words, word order, etc.
  */
 function calculateSimilarity(str1: string, str2: string): number {
   const normalized1 = normalizeText(str1)
@@ -61,16 +108,17 @@ function calculateSimilarity(str1: string, str2: string): number {
     return 1.0
   }
 
-  // Calculate Levenshtein distance
+  // Calculate Jaccard similarity (word-based, handles stop words and word order)
+  const jaccard = jaccardSimilarity(str1, str2)
+
+  // Calculate Levenshtein similarity (character-based, handles typos)
   const distance = levenshteinDistance(normalized1, normalized2)
   const maxLength = Math.max(normalized1.length, normalized2.length)
+  const levenshtein = maxLength === 0 ? 1.0 : 1 - distance / maxLength
 
-  if (maxLength === 0) {
-    return 1.0
-  }
-
-  // Similarity ratio (1 - normalized distance)
-  return 1 - distance / maxLength
+  // Combined similarity: 60% Jaccard (word-based) + 40% Levenshtein (character-based)
+  // This gives more weight to word matching, which is better for handling stop words
+  return (jaccard * 0.6) + (levenshtein * 0.4)
 }
 
 /**
@@ -147,15 +195,33 @@ function checkCommonVariations(userAnswer: string, correctAnswer: string): boole
 
 /**
  * Enhanced similarity check that includes common variations
+ * Uses industry-standard Jaccard similarity + Levenshtein distance
+ * Handles stop words, word order, singular/plural, typos, etc.
  */
 export function isSimilarAnswerWithVariations(
   userAnswer: string,
   correctAnswer: string,
-  threshold: number = 0.85
+  threshold: number = 0.80 // Lowered to 80% to be more lenient with stop words
 ): boolean {
-  // First check exact match
-  if (normalizeText(userAnswer) === normalizeText(correctAnswer)) {
+  if (!userAnswer || !correctAnswer) {
+    return false
+  }
+
+  // First check exact match after normalization (removes stop words, punctuation, case)
+  const tokens1 = tokenize(userAnswer)
+  const tokens2 = tokenize(correctAnswer)
+  
+  if (tokens1.length === 0 && tokens2.length === 0) {
     return true
+  }
+
+  // If both tokenize to the same set of words, it's a match (handles stop words and word order)
+  if (tokens1.length > 0 && tokens2.length > 0) {
+    const set1 = new Set(tokens1)
+    const set2 = new Set(tokens2)
+    if (set1.size === set2.size && [...set1].every(x => set2.has(x))) {
+      return true
+    }
   }
 
   // Check common variations (singular/plural)
@@ -163,7 +229,7 @@ export function isSimilarAnswerWithVariations(
     return true
   }
 
-  // Check similarity score
+  // Check similarity score (Jaccard + Levenshtein combined)
   return isSimilarAnswer(userAnswer, correctAnswer, threshold)
 }
 
