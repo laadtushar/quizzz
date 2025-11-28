@@ -101,16 +101,6 @@ export function QuizPreview({ quiz, questions }: QuizPreviewProps) {
               disabled={true}
               showAnswer={true}
             />
-            {question.explanation && (
-              <Card className="bg-muted">
-                <CardContent className="pt-4">
-                  <p className="text-sm font-medium mb-1">Explanation:</p>
-                  <p className="text-sm text-muted-foreground">
-                    {question.explanation}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
             {index < sortedQuestions.length - 1 && <Separator className="my-6" />}
           </div>
         ))}

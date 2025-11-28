@@ -50,8 +50,11 @@ export function TrueFalseQuestion({
     return Boolean(correctAnswer)
   }
 
-  const isCorrect = showAnswer && value !== undefined && value === getCorrectAnswerBool()
+  const correctAnswerBool = getCorrectAnswerBool()
+  const isCorrect = showAnswer && value !== undefined && value === correctAnswerBool
   const showCorrectness = showAnswer && value !== undefined
+  // For preview mode (no user answer), show which option is correct
+  const showPreviewMode = showAnswer && value === undefined
 
   return (
     <Card>
@@ -71,9 +74,14 @@ export function TrueFalseQuestion({
             <div
               className={cn(
                 'flex items-center space-x-2 rounded-lg border p-3',
+                // User selected True and it's correct
                 showAnswer && value === true && isCorrect && 'border-green-500 bg-green-50',
+                // User selected True and it's incorrect
                 showAnswer && value === true && !isCorrect && 'border-red-500 bg-red-50',
-                showAnswer && question.correctAnswer === true && value !== true && 'border-green-500 bg-green-50'
+                // Preview mode: show correct answer (True is correct)
+                showPreviewMode && correctAnswerBool === true && 'border-green-500 bg-green-50',
+                // User didn't select True, but True is the correct answer
+                showAnswer && value !== undefined && value !== true && correctAnswerBool === true && 'border-green-500 bg-green-50'
               )}
             >
               <RadioGroupItem value="true" id="true" />
@@ -88,7 +96,7 @@ export function TrueFalseQuestion({
                   {value === true && !isCorrect && (
                     <XCircle className="h-5 w-5 text-red-600" />
                   )}
-                  {question.correctAnswer === true && value !== true && (
+                  {(showPreviewMode || (value !== undefined && value !== true)) && correctAnswerBool === true && (
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                   )}
                 </>
@@ -98,9 +106,14 @@ export function TrueFalseQuestion({
             <div
               className={cn(
                 'flex items-center space-x-2 rounded-lg border p-3',
+                // User selected False and it's correct
                 showAnswer && value === false && isCorrect && 'border-green-500 bg-green-50',
+                // User selected False and it's incorrect
                 showAnswer && value === false && !isCorrect && 'border-red-500 bg-red-50',
-                showAnswer && question.correctAnswer === false && value !== false && 'border-green-500 bg-green-50'
+                // Preview mode: show correct answer (False is correct)
+                showPreviewMode && correctAnswerBool === false && 'border-green-500 bg-green-50',
+                // User didn't select False, but False is the correct answer
+                showAnswer && value !== undefined && value !== false && correctAnswerBool === false && 'border-green-500 bg-green-50'
               )}
             >
               <RadioGroupItem value="false" id="false" />
@@ -115,7 +128,7 @@ export function TrueFalseQuestion({
                   {value === false && !isCorrect && (
                     <XCircle className="h-5 w-5 text-red-600" />
                   )}
-                  {question.correctAnswer === false && value !== false && (
+                  {(showPreviewMode || (value !== undefined && value !== false)) && correctAnswerBool === false && (
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                   )}
                 </>
