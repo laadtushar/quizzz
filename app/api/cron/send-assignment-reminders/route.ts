@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { sendAssignmentReminder } from '@/lib/email/sender'
+import { getAppUrl } from '@/lib/utils/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Send email notifications
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // For cron jobs, we need to construct the URL from environment or use a fallback
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                   'http://localhost:3000'
     let emailsSent = 0
     let emailsFailed = 0
 

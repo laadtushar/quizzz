@@ -5,6 +5,7 @@ import { hasAlsoitEmail } from '@/lib/auth/middleware'
 import { registerSchema } from '@/lib/validations/auth'
 import { generateVerificationToken, getVerificationExpiry } from '@/lib/auth/email-verification'
 import { sendEmailVerification } from '@/lib/email/sender'
+import { getAppUrl } from '@/lib/utils/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Send verification email (non-blocking - user is created even if email fails)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = getAppUrl(request)
     const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`
     
     // Don't await - send email in background, don't block user registration

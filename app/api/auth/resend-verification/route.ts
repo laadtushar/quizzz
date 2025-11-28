@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateVerificationToken, getVerificationExpiry } from '@/lib/auth/email-verification'
 import { sendEmailVerification } from '@/lib/email/sender'
+import { getAppUrl } from '@/lib/utils/app-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Send verification email
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = getAppUrl(request)
     const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`
     
     await sendEmailVerification({
