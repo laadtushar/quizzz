@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,7 @@ type AssignmentForm = z.infer<typeof createAssignmentSchema>
 
 export function AssignmentCreator() {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
 
   // Fetch quizzes
@@ -47,6 +48,7 @@ export function AssignmentCreator() {
     setValue,
     watch,
     reset,
+    trigger,
   } = useForm<AssignmentForm>({
     resolver: zodResolver(createAssignmentSchema),
     defaultValues: {
@@ -80,6 +82,8 @@ export function AssignmentCreator() {
         userIds: [],
         dueDate: null,
       })
+      // Invalidate assignments query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['assignments'] })
     },
     onError: (error: Error) => {
       toast({
@@ -91,26 +95,6 @@ export function AssignmentCreator() {
   })
 
   const onSubmit = (data: AssignmentForm) => {
-    console.log('Form submitted with data:', data)
-    
-    if (!data.quizId) {
-      toast({
-        title: 'Error',
-        description: 'Please select a quiz',
-        variant: 'destructive',
-      })
-      return
-    }
-    
-    if (!data.userIds || data.userIds.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Please select at least one user',
-        variant: 'destructive',
-      })
-      return
-    }
-    
     // Convert datetime-local format to ISO string
     let dueDate: string | null = data.dueDate || null
     
@@ -155,22 +139,25 @@ export function AssignmentCreator() {
       }
     }
     
-    console.log('Submitting assignment with:', { ...data, dueDate })
+    // Submit with converted dueDate
     createMutation.mutate({ ...data, dueDate })
   }
   
   const onError = (errors: any) => {
     console.log('Form validation errors:', errors)
-    toast({
-      title: 'Validation Error',
-      description: 'Please check the form and fix any errors.',
-      variant: 'destructive',
-    })
+    // Only show toast if there are actual validation errors
+    if (Object.keys(errors).length > 0) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please check the form and fix any errors.',
+        variant: 'destructive',
+      })
+    }
   }
 
-  // Sync selectedUserIds with form state
+  // Sync selectedUserIds with form state (always keep in sync for validation)
   useEffect(() => {
-    setValue('userIds', selectedUserIds, { shouldValidate: true })
+    setValue('userIds', selectedUserIds, { shouldValidate: false, shouldDirty: true, shouldTouch: false })
   }, [selectedUserIds, setValue])
 
   const toggleUser = (userId: string) => {
@@ -190,7 +177,23 @@ export function AssignmentCreator() {
         <CardTitle>Create Assignment</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
+        <form 
+          onSubmit={handleSubmit(
+            (data) => {
+              // Use selectedUserIds from state (most up-to-date)
+              const finalData = { ...data, userIds: selectedUserIds }
+              onSubmit(finalData)
+            },
+            (errors) => {
+              // Only show error if there are actual validation errors
+              if (errors && Object.keys(errors).length > 0) {
+                console.log('Form validation errors:', errors)
+                onError(errors)
+              }
+            }
+          )} 
+          className="space-y-6"
+        >
           <div className="space-y-2">
             <Label htmlFor="quizId">Quiz *</Label>
             <Select
