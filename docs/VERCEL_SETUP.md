@@ -54,7 +54,18 @@ Add all environment variables in Vercel dashboard:
    - Generate: `openssl rand -base64 32`
    - Used to secure cron job endpoints
 
-### Optional Variables
+### Optional Variables (for email functionality)
+
+7. **GMAIL_USER**
+   - Your Gmail address (e.g., `your-email@gmail.com`)
+   - Required for sending verification emails and assignment reminders
+
+8. **GMAIL_APP_PASSWORD**
+   - Gmail App Password (16 characters)
+   - See `docs/EMAIL_SETUP.md` for detailed setup instructions
+   - **Note**: If not set, email features will be disabled (non-critical)
+
+### Other Optional Variables
 
 - `NEXT_PUBLIC_ENABLE_BADGES`: `false`
 - `NEXT_PUBLIC_MAX_QUESTIONS_PER_QUIZ`: `50`

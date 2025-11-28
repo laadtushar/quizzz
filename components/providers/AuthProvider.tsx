@@ -51,7 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       const error = await res.json()
-      throw new Error(error.error || 'Login failed')
+      const errorObj = new Error(error.error || 'Login failed') as any
+      errorObj.code = error.code
+      errorObj.email = error.email
+      throw errorObj
     }
 
     await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })

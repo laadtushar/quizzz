@@ -37,6 +37,11 @@ Add the following environment variables in Vercel:
 - `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN`: `@alsoit.com`
 - `CRON_SECRET`: Generate with `openssl rand -base64 32`
 
+### Optional (for email functionality)
+- `GMAIL_USER`: Your Gmail address for sending emails
+- `GMAIL_APP_PASSWORD`: Gmail App Password (see `docs/EMAIL_SETUP.md` for setup)
+  - **Note**: If not set, email verification and reminders will be skipped (non-critical)
+
 ### Optional
 - `NEXT_PUBLIC_ENABLE_BADGES`: `false`
 - `NEXT_PUBLIC_MAX_QUESTIONS_PER_QUIZ`: `50`

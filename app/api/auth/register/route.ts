@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth/password'
-import { createSession, setSessionCookie } from '@/lib/auth/session'
 import { hasAlsoitEmail } from '@/lib/auth/middleware'
 import { registerSchema } from '@/lib/validations/auth'
 import { generateVerificationToken, getVerificationExpiry } from '@/lib/auth/email-verification'
@@ -58,27 +57,29 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Send verification email
+    // Send verification email (non-blocking - user is created even if email fails)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`
     
-    await sendEmailVerification({
+    // Don't await - send email in background, don't block user registration
+    sendEmailVerification({
       email: user.email,
       displayName: user.displayName,
       verificationLink,
+    }).catch((error) => {
+      console.error('Failed to send verification email (non-critical):', error)
     })
 
-    // Create session
-    const token = await createSession(user.id)
-    setSessionCookie(token)
-
-    // Return sanitized user
+    // Don't create session - user must verify email before logging in
+    // Return message indicating verification email was sent
     return NextResponse.json({
+      message: 'Registration successful. Please check your email to verify your account before logging in.',
       user: {
         id: user.id,
         email: user.email,
         displayName: user.displayName,
         role: user.role,
+        emailVerified: false,
       },
     })
   } catch (error) {

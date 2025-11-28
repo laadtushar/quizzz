@@ -31,10 +31,11 @@ export function RegisterForm() {
     try {
       await registerUser(data.email, data.password, data.displayName)
       toast({
-        title: 'Success',
-        description: 'Account created successfully',
+        title: 'Account Created',
+        description: 'Please check your email to verify your account before logging in.',
       })
-      router.push('/dashboard')
+      // Redirect to login page instead of dashboard
+      router.push('/auth/login')
     } catch (error) {
       toast({
         title: 'Error',
