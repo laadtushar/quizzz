@@ -53,17 +53,27 @@ export async function POST(
       : 60
     const isPassed = percentage >= passingScore
 
-    // Check if this is the first attempt
-    const previousAttempts = await prisma.attempt.count({
+    // Check if this is the first attempt and get previous attempt for XP adjustment
+    const previousAttempts = await prisma.attempt.findMany({
       where: {
         userId: user.id,
         quizId: attempt.quizId,
         status: 'completed',
       },
+      select: {
+        id: true,
+        xpAwarded: true,
+      },
+      orderBy: {
+        completedAt: 'desc',
+      },
     })
-    const isFirstAttempt = previousAttempts === 0
+    
+    const isFirstAttempt = previousAttempts.length === 0
+    const previousAttempt = previousAttempts.length > 0 ? previousAttempts[0] : null
+    const previousXpAwarded = previousAttempt?.xpAwarded || 0
 
-    // Calculate XP
+    // Calculate XP for this attempt
     const xpAwarded = calculateXP(
       attempt.quiz.questionCount,
       attempt.quiz.settingsDifficultyLevel,
@@ -90,12 +100,22 @@ export async function POST(
       })
 
       // Update user stats
+      // For retakes: subtract previous XP and add new XP
+      // For first attempt: just add XP
+      const xpDelta = isFirstAttempt ? xpAwarded : xpAwarded - previousXpAwarded
+      
+      // Only increment quizzesCompleted if this is the first completion
+      const userUpdate: any = {
+        totalXp: { increment: xpDelta },
+      }
+      
+      if (isFirstAttempt) {
+        userUpdate.quizzesCompleted = { increment: 1 }
+      }
+      
       await tx.user.update({
         where: { id: user.id },
-        data: {
-          totalXp: { increment: xpAwarded },
-          quizzesCompleted: { increment: 1 },
-        },
+        data: userUpdate,
       })
 
       // Update assignment if exists

@@ -169,19 +169,41 @@ export async function DELETE(
 
     // If the attempt was completed, we need to update user stats
     if (attempt.status === 'completed') {
-      // Recalculate user stats
-      const userAttempts = await prisma.attempt.findMany({
+      // Recalculate user stats correctly:
+      // - XP: Sum of latest attempt's XP for each unique quiz
+      // - quizzesCompleted: Count of unique quizzes completed
+      const allUserAttempts = await prisma.attempt.findMany({
         where: {
           userId: attempt.userId,
           status: 'completed',
         },
         select: {
+          quizId: true,
           xpAwarded: true,
+          completedAt: true,
+        },
+        orderBy: {
+          completedAt: 'desc',
         },
       })
 
-      const totalXp = userAttempts.reduce((sum, a) => sum + (a.xpAwarded || 0), 0)
-      const quizzesCompleted = userAttempts.length
+      // Get latest attempt for each quiz (for XP calculation)
+      const latestAttemptsByQuiz = new Map<string, number>()
+      for (const userAttempt of allUserAttempts) {
+        if (!latestAttemptsByQuiz.has(userAttempt.quizId)) {
+          latestAttemptsByQuiz.set(userAttempt.quizId, userAttempt.xpAwarded || 0)
+        }
+      }
+
+      // Calculate total XP from latest attempts only
+      const totalXp = Array.from(latestAttemptsByQuiz.values()).reduce(
+        (sum, xp) => sum + xp,
+        0
+      )
+
+      // Count unique quizzes completed
+      const uniqueQuizIds = new Set(allUserAttempts.map((a) => a.quizId))
+      const quizzesCompleted = uniqueQuizIds.size
 
       await prisma.user.update({
         where: { id: attempt.userId },
@@ -277,29 +299,48 @@ export async function POST(
         },
       })
 
-      // Update user stats if XP was awarded
-      if (attempt.xpAwarded && attempt.xpAwarded > 0) {
-        const user = await tx.user.findUnique({
-          where: { id: attempt.userId },
-          select: {
-            totalXp: true,
-            quizzesCompleted: true,
-          },
-        })
+      // Recalculate user stats after reset
+      // Get all remaining completed attempts
+      const remainingAttempts = await tx.attempt.findMany({
+        where: {
+          userId: attempt.userId,
+          status: 'completed',
+        },
+        select: {
+          quizId: true,
+          xpAwarded: true,
+          completedAt: true,
+        },
+        orderBy: {
+          completedAt: 'desc',
+        },
+      })
 
-        if (user) {
-          const newTotalXp = Math.max(0, user.totalXp - attempt.xpAwarded)
-          const newQuizzesCompleted = Math.max(0, user.quizzesCompleted - 1)
-
-          await tx.user.update({
-            where: { id: attempt.userId },
-            data: {
-              totalXp: newTotalXp,
-              quizzesCompleted: newQuizzesCompleted,
-            },
-          })
+      // Get latest attempt for each quiz (for XP calculation)
+      const latestAttemptsByQuiz = new Map<string, number>()
+      for (const userAttempt of remainingAttempts) {
+        if (!latestAttemptsByQuiz.has(userAttempt.quizId)) {
+          latestAttemptsByQuiz.set(userAttempt.quizId, userAttempt.xpAwarded || 0)
         }
       }
+
+      // Calculate total XP from latest attempts only
+      const totalXp = Array.from(latestAttemptsByQuiz.values()).reduce(
+        (sum, xp) => sum + xp,
+        0
+      )
+
+      // Count unique quizzes completed
+      const uniqueQuizIds = new Set(remainingAttempts.map((a) => a.quizId))
+      const quizzesCompleted = uniqueQuizIds.size
+
+      await tx.user.update({
+        where: { id: attempt.userId },
+        data: {
+          totalXp,
+          quizzesCompleted,
+        },
+      })
 
       // Update assignment if it was marked as completed
       const assignment = await tx.assignment.findFirst({
