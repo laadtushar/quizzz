@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth/middleware'
+import { requireAdmin, getCurrentUser } from '@/lib/auth/middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +9,28 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await requireAdmin()
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // For non-admin users, check if they've completed the quiz
+    if (currentUser.role !== 'admin') {
+      const userAttempt = await prisma.attempt.findFirst({
+        where: {
+          userId: currentUser.id,
+          quizId: params.id,
+          status: 'completed',
+        },
+      })
+
+      if (!userAttempt) {
+        return NextResponse.json(
+          { error: 'You must complete the quiz before viewing results' },
+          { status: 403 }
+        )
+      }
+    }
 
     // Fetch quiz with all attempts
     const quiz = await prisma.quiz.findUnique({

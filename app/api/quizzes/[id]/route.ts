@@ -42,6 +42,29 @@ export async function GET(
       return NextResponse.json({ error: 'Quiz not found' }, { status: 404 })
     }
 
+    // For non-admin users, exclude correct answers and explanations to prevent cheating
+    if (currentUser.role !== 'admin') {
+      const sanitizedQuiz = {
+        ...quiz,
+        questions: quiz.questions.map((q: any) => {
+          const { correctAnswer, explanation, options, ...questionWithoutAnswer } = q
+          // For MCQ and multiple select, remove isCorrect flags from options
+          let sanitizedOptions = options
+          if (Array.isArray(options)) {
+            sanitizedOptions = options.map((opt: any) => {
+              const { isCorrect, ...optionWithoutCorrect } = opt
+              return optionWithoutCorrect
+            })
+          }
+          return {
+            ...questionWithoutAnswer,
+            options: sanitizedOptions,
+          }
+        }),
+      }
+      return NextResponse.json({ quiz: sanitizedQuiz })
+    }
+
     return NextResponse.json({ quiz })
   } catch (error) {
     console.error('Get quiz error:', error)
@@ -76,6 +99,9 @@ export async function PATCH(
       if (validatedData.settings.allowRetries !== undefined) {
         updateData.settingsAllowRetries = validatedData.settings.allowRetries
       }
+      if (validatedData.settings.maxAttempts !== undefined) {
+        updateData.settingsMaxAttempts = validatedData.settings.maxAttempts
+      }
       if (validatedData.settings.difficultyLevel !== undefined) {
         updateData.settingsDifficultyLevel = validatedData.settings.difficultyLevel
       }
@@ -90,6 +116,9 @@ export async function PATCH(
     }
     if (validatedData.settingsAllowRetries !== undefined) {
       updateData.settingsAllowRetries = validatedData.settingsAllowRetries
+    }
+    if (validatedData.settingsMaxAttempts !== undefined) {
+      updateData.settingsMaxAttempts = validatedData.settingsMaxAttempts
     }
     if (validatedData.settingsDifficultyLevel !== undefined) {
       updateData.settingsDifficultyLevel = validatedData.settingsDifficultyLevel

@@ -45,6 +45,33 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // For non-admin users, only show correct answers if the attempt is completed
+    // This prevents users from seeing answers while taking the quiz
+    if (currentUser.role !== 'admin' && attempt.status !== 'completed') {
+      const sanitizedAttempt = {
+        ...attempt,
+        quiz: {
+          ...attempt.quiz,
+          questions: attempt.quiz.questions.map((q: any) => {
+            const { correctAnswer, explanation, options, ...questionWithoutAnswer } = q
+            // For MCQ and multiple select, remove isCorrect flags from options
+            let sanitizedOptions = options
+            if (Array.isArray(options)) {
+              sanitizedOptions = options.map((opt: any) => {
+                const { isCorrect, ...optionWithoutCorrect } = opt
+                return optionWithoutCorrect
+              })
+            }
+            return {
+              ...questionWithoutAnswer,
+              options: sanitizedOptions,
+            }
+          }),
+        },
+      }
+      return NextResponse.json({ attempt: sanitizedAttempt })
+    }
+
     return NextResponse.json({ attempt })
   } catch (error) {
     console.error('Get attempt error:', error)

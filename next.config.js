@@ -13,7 +13,7 @@ const nextConfig = {
   // Optimize for Vercel deployment
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '20mb', // Increased for large transcript uploads
     },
   },
 }

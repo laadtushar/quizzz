@@ -20,6 +20,7 @@ export const questionSchema = z.object({
 export const quizSettingsSchema = z.object({
   timerSeconds: z.number().int().positive().optional().nullable(),
   allowRetries: z.boolean().default(true),
+  maxAttempts: z.number().int().positive().optional().nullable(), // null = unlimited
   difficultyLevel: z.enum(['easy', 'medium', 'hard']).default('medium'),
   passingScore: z.number().min(0).max(100).optional().nullable(),
 })
@@ -38,6 +39,7 @@ export const updateQuizSchema = createQuizSchema.partial().extend({
   // Allow flat structure for direct updates
   settingsTimerSeconds: z.number().int().positive().nullable().optional(),
   settingsAllowRetries: z.boolean().optional(),
+  settingsMaxAttempts: z.number().int().positive().nullable().optional(), // null = unlimited
   settingsDifficultyLevel: z.enum(['easy', 'medium', 'hard']).optional(),
   settingsPassingScore: z.number().min(0).max(100).nullable().optional(),
 })

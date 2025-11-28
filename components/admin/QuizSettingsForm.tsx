@@ -25,6 +25,7 @@ const quizSettingsSchema = z.object({
   visibility: z.enum(['visible', 'hidden']),
   settingsTimerSeconds: z.number().int().positive().nullable().optional(),
   settingsAllowRetries: z.boolean(),
+  settingsMaxAttempts: z.number().int().positive().nullable().optional(),
   settingsDifficultyLevel: z.enum(['easy', 'medium', 'hard']),
   settingsPassingScore: z.number().min(0).max(100).nullable().optional(),
   tags: z.array(z.string()).default([]),
@@ -40,6 +41,7 @@ interface QuizSettingsFormProps {
     visibility: 'visible' | 'hidden'
     settingsTimerSeconds?: number | null
     settingsAllowRetries: boolean
+    settingsMaxAttempts?: number | null
     settingsDifficultyLevel: string
     settingsPassingScore?: number | null
     tags: string[]
@@ -72,6 +74,7 @@ export function QuizSettingsForm({
       visibility: initialData?.visibility || 'visible',
       settingsTimerSeconds: initialData?.settingsTimerSeconds || null,
       settingsAllowRetries: initialData?.settingsAllowRetries ?? true,
+      settingsMaxAttempts: initialData?.settingsMaxAttempts || null,
       settingsDifficultyLevel:
         (initialData?.settingsDifficultyLevel as 'easy' | 'medium' | 'hard') ||
         'medium',
@@ -105,6 +108,7 @@ export function QuizSettingsForm({
         tags,
         settingsTimerSeconds: timerSeconds,
         settingsAllowRetries: data.settingsAllowRetries,
+        settingsMaxAttempts: data.settingsMaxAttempts || null,
         settingsDifficultyLevel: data.settingsDifficultyLevel,
         settingsPassingScore: data.settingsPassingScore,
       }
@@ -241,6 +245,35 @@ export function QuizSettingsForm({
           }
         />
       </div>
+
+      {watch('settingsAllowRetries') && (
+        <div className="space-y-2">
+          <Label htmlFor="maxAttempts">Maximum Attempts</Label>
+          <Input
+            id="maxAttempts"
+            type="number"
+            min="1"
+            placeholder="Leave empty for unlimited"
+            value={watch('settingsMaxAttempts')?.toString() || ''}
+            onChange={(e) => {
+              const value = e.target.value
+              setValue(
+                'settingsMaxAttempts',
+                value ? parseInt(value) : null,
+                { shouldValidate: true }
+              )
+            }}
+          />
+          <p className="text-sm text-muted-foreground">
+            Maximum number of attempts allowed (leave empty for unlimited)
+          </p>
+          {errors.settingsMaxAttempts && (
+            <p className="text-sm text-destructive">
+              {errors.settingsMaxAttempts.message}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="passingScore">Passing Score (%)</Label>

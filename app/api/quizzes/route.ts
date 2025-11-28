@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
         tags: validatedData.tags,
         settingsTimerSeconds: validatedData.settings.timerSeconds,
         settingsAllowRetries: validatedData.settings.allowRetries,
+        settingsMaxAttempts: validatedData.settings.maxAttempts || null,
         settingsDifficultyLevel: validatedData.settings.difficultyLevel,
         settingsPassingScore: validatedData.settings.passingScore,
         questionCount: validatedData.questions?.length || 0,

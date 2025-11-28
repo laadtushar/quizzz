@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { generateQuizSchema } from '@/lib/validations/ai-generation'
@@ -39,25 +39,29 @@ export function QuizGenerator() {
     },
   })
 
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [polling, setPolling] = useState(false)
+
   const generateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('/api/ai/generate-quiz', {
+      const res = await fetch('/api/ai/generate-quiz/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, questionTypes: selectedTypes }),
       })
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.error || 'Generation failed')
+        throw new Error(error.error || 'Failed to start generation')
       }
       return res.json()
     },
     onSuccess: (data) => {
+      setJobId(data.jobId)
+      setPolling(true)
       toast({
-        title: 'Quiz generated!',
-        description: `Successfully generated ${data.questionCount} questions`,
+        title: 'Generation started',
+        description: 'Processing your quiz. This may take a few minutes...',
       })
-      router.push(`/dashboard/admin/quizzes/${data.quiz.id}`)
     },
     onError: (error: Error) => {
       toast({
@@ -67,6 +71,64 @@ export function QuizGenerator() {
       })
     },
   })
+
+  // Poll for status updates
+  useEffect(() => {
+    if (!jobId || !polling) return
+
+    let pollCount = 0
+    const maxPolls = 150 // 5 minutes max (150 * 2 seconds = 300 seconds)
+    
+    const pollInterval = setInterval(async () => {
+      pollCount++
+      
+      // Stop polling after max attempts
+      if (pollCount > maxPolls) {
+        setPolling(false)
+        clearInterval(pollInterval)
+        toast({
+          title: 'Generation timeout',
+          description: 'Generation is taking longer than expected. Please check back later or try again.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      try {
+        const res = await fetch(`/api/ai/generate-quiz/status/${jobId}`)
+        if (!res.ok) {
+          throw new Error('Failed to check status')
+        }
+        const status = await res.json()
+
+        if (status.status === 'success') {
+          setPolling(false)
+          clearInterval(pollInterval)
+          toast({
+            title: 'Quiz generated!',
+            description: `Successfully generated ${status.questionsGenerated} questions`,
+          })
+          if (status.quiz?.id) {
+            router.push(`/dashboard/admin/quizzes/${status.quiz.id}`)
+          }
+        } else if (status.status === 'error') {
+          setPolling(false)
+          clearInterval(pollInterval)
+          toast({
+            title: 'Generation failed',
+            description: status.errorMessage || 'An error occurred during generation',
+            variant: 'destructive',
+          })
+        }
+        // If still processing, continue polling
+      } catch (error) {
+        console.error('Polling error:', error)
+        // Continue polling on error (network issues, etc.)
+      }
+    }, 2000) // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [jobId, polling, router, toast])
 
   const onSubmit = (data: any) => {
     generateMutation.mutate({ ...data, questionTypes: selectedTypes })
@@ -122,16 +184,23 @@ export function QuizGenerator() {
             <Textarea
               id="inputText"
               {...register('inputText')}
-              placeholder="Paste the text you want to generate questions from (minimum 100 characters)"
-              rows={10}
+              placeholder="Paste the text you want to generate questions from (minimum 100 characters, up to 1,000,000 characters for large transcripts)"
+              rows={15}
               className="font-mono text-sm"
             />
             {errors.inputText && (
               <p className="text-sm text-destructive">{errors.inputText.message as string}</p>
             )}
-            <p className="text-xs text-muted-foreground">
-              {watch('inputText')?.length || 0} characters
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {watch('inputText')?.length || 0} / 1,000,000 characters
+              </p>
+              {watch('inputText')?.length > 50000 && (
+                <p className="text-xs text-blue-600">
+                  Large transcript detected - processing may take longer
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -194,17 +263,22 @@ export function QuizGenerator() {
           <Button
             type="submit"
             className="w-full"
-            disabled={generateMutation.isPending || selectedTypes.length === 0}
+            disabled={generateMutation.isPending || polling || selectedTypes.length === 0}
           >
-            {generateMutation.isPending ? (
+            {generateMutation.isPending || polling ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                {polling ? 'Generating... (this may take a few minutes)' : 'Starting...'}
               </>
             ) : (
               'Generate Quiz'
             )}
           </Button>
+          {polling && jobId && (
+            <p className="text-sm text-muted-foreground text-center">
+              Processing your quiz. Please keep this page open. Large transcripts may take several minutes.
+            </p>
+          )}
         </form>
       </CardContent>
     </Card>

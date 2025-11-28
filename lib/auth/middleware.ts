@@ -60,3 +60,4 @@ export function isAuthenticated(user: AuthUser | null): boolean {
   return user !== null
 }
 
+

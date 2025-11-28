@@ -309,6 +309,7 @@ export default function QuizEditPage() {
                   visibility: quiz.visibility,
                   settingsTimerSeconds: quiz.settingsTimerSeconds,
                   settingsAllowRetries: quiz.settingsAllowRetries,
+                  settingsMaxAttempts: quiz.settingsMaxAttempts,
                   settingsDifficultyLevel: quiz.settingsDifficultyLevel,
                   settingsPassingScore: quiz.settingsPassingScore
                     ? Number(quiz.settingsPassingScore)

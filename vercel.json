@@ -12,6 +12,9 @@
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 60
+    },
+    "app/api/ai/generate-quiz/route.ts": {
+      "maxDuration": 300
     }
   }
 }

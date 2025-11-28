@@ -6,11 +6,25 @@ import { generateQuizSchema } from '@/lib/validations/ai-generation'
 import { generateQuiz } from '@/lib/ai/generateQuiz'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // 5 minutes for large transcript processing
 
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAdmin()
-    const body = await request.json()
+    
+    // For large transcripts, we need to handle the body parsing carefully
+    let body
+    try {
+      body = await request.json()
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('body')) {
+        return NextResponse.json(
+          { error: 'Request body too large. Maximum size is 20MB.' },
+          { status: 413 }
+        )
+      }
+      throw error
+    }
     const validatedData = generateQuizSchema.parse(body)
 
     const startTime = Date.now()

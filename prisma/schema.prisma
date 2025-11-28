@@ -1,7 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -48,29 +47,30 @@ enum AttemptStatus {
 }
 
 enum AIGenerationStatus {
+  processing
   success
   error
 }
 
 model User {
-  id                String    @id @default(uuid())
-  email             String    @unique @db.VarChar(255)
-  passwordHash      String    @map("password_hash") @db.VarChar(255)
-  displayName       String    @map("display_name") @db.VarChar(255)
-  role              UserRole  @default(guest)
-  totalXp           Int       @default(0) @map("total_xp")
-  quizzesCompleted  Int       @default(0) @map("quizzes_completed")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  lastLoginAt       DateTime? @map("last_login_at")
-  avatarUrl         String?   @map("avatar_url")
+  id               String    @id @default(uuid())
+  email            String    @unique @db.VarChar(255)
+  passwordHash     String    @map("password_hash") @db.VarChar(255)
+  displayName      String    @map("display_name") @db.VarChar(255)
+  role             UserRole  @default(guest)
+  totalXp          Int       @default(0) @map("total_xp")
+  quizzesCompleted Int       @default(0) @map("quizzes_completed")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  lastLoginAt      DateTime? @map("last_login_at")
+  avatarUrl        String?   @map("avatar_url")
 
   // Relations
-  sessions          Session[]
-  createdQuizzes    Quiz[]    @relation("QuizCreator")
-  assignments       Assignment[] @relation("AssignedTo")
-  assignedBy        Assignment[] @relation("AssignedBy")
-  attempts          Attempt[]
-  aiGenerationLogs  AIGenerationLog[]
+  sessions         Session[]
+  createdQuizzes   Quiz[]            @relation("QuizCreator")
+  assignments      Assignment[]      @relation("AssignedTo")
+  assignedBy       Assignment[]      @relation("AssignedBy")
+  attempts         Attempt[]
+  aiGenerationLogs AIGenerationLog[]
 
   @@index([role, totalXp(sort: Desc)])
   @@map("users")
@@ -91,29 +91,31 @@ model Session {
 }
 
 model Quiz {
-  id                    String         @id @default(uuid())
-  title                 String         @db.VarChar(255)
-  description           String?        @db.Text
-  createdBy             String         @map("created_by")
-  createdAt             DateTime       @default(now()) @map("created_at")
-  updatedAt             DateTime       @updatedAt @map("updated_at")
-  visibility            QuizVisibility @default(visible)
-  status                QuizStatus     @default(draft)
-  questionCount         Int            @default(0) @map("question_count")
-  totalPoints           Int            @default(0) @map("total_points")
-  tags                  String[]       @default([])
-  
+  id            String         @id @default(uuid())
+  title         String         @db.VarChar(255)
+  description   String?        @db.Text
+  createdBy     String         @map("created_by")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  visibility    QuizVisibility @default(visible)
+  status        QuizStatus     @default(draft)
+  questionCount Int            @default(0) @map("question_count")
+  totalPoints   Int            @default(0) @map("total_points")
+  tags          String[]       @default([])
+
   // Settings (stored as individual columns for easier querying)
-  settingsTimerSeconds  Int?           @map("settings_timer_seconds")
-  settingsAllowRetries  Boolean        @default(true) @map("settings_allow_retries")
-  settingsDifficultyLevel String       @default("medium") @map("settings_difficulty_level") @db.VarChar(20)
-  settingsPassingScore  Decimal?       @map("settings_passing_score") @db.Decimal(5, 2)
+  settingsTimerSeconds    Int?     @map("settings_timer_seconds")
+  settingsAllowRetries    Boolean  @default(true) @map("settings_allow_retries")
+  settingsMaxAttempts     Int?     @map("settings_max_attempts") // null = unlimited
+  settingsDifficultyLevel String   @default("medium") @map("settings_difficulty_level") @db.VarChar(20)
+  settingsPassingScore    Decimal? @map("settings_passing_score") @db.Decimal(5, 2)
 
   // Relations
-  creator               User           @relation("QuizCreator", fields: [createdBy], references: [id])
-  questions             Question[]
-  assignments           Assignment[]
-  attempts              Attempt[]
+  creator           User              @relation("QuizCreator", fields: [createdBy], references: [id])
+  questions         Question[]
+  assignments       Assignment[]
+  attempts          Attempt[]
+  aiGenerationLogs  AIGenerationLog[]
 
   @@index([visibility, createdAt(sort: Desc)])
   @@index([createdBy])
@@ -128,7 +130,7 @@ model Question {
   type          QuestionType
   questionText  String       @map("question_text") @db.Text
   points        Int          @default(10)
-  options       Json?        // For MCQ, multiple-select: [{id, text, isCorrect}]
+  options       Json? // For MCQ, multiple-select: [{id, text, isCorrect}]
   correctAnswer Json         @map("correct_answer")
   explanation   String?      @db.Text
   imageUrl      String?      @map("image_url")
@@ -141,20 +143,20 @@ model Question {
 }
 
 model Assignment {
-  id          String           @id @default(uuid())
-  quizId      String           @map("quiz_id")
-  assignedTo  String           @map("assigned_to")
-  assignedBy  String           @map("assigned_by")
-  assignedAt  DateTime         @default(now()) @map("assigned_at")
-  dueDate     DateTime?        @map("due_date")
-  status      AssignmentStatus @default(pending)
-  completedAt DateTime?        @map("completed_at")
-  score       Decimal?         @db.Decimal(5, 2)
-  reminderSent Boolean         @default(false) @map("reminder_sent")
+  id           String           @id @default(uuid())
+  quizId       String           @map("quiz_id")
+  assignedTo   String           @map("assigned_to")
+  assignedBy   String           @map("assigned_by")
+  assignedAt   DateTime         @default(now()) @map("assigned_at")
+  dueDate      DateTime?        @map("due_date")
+  status       AssignmentStatus @default(pending)
+  completedAt  DateTime?        @map("completed_at")
+  score        Decimal?         @db.Decimal(5, 2)
+  reminderSent Boolean          @default(false) @map("reminder_sent")
 
-  quiz       Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  user       User @relation("AssignedTo", fields: [assignedTo], references: [id], onDelete: Cascade)
-  assigner   User @relation("AssignedBy", fields: [assignedBy], references: [id])
+  quiz     Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user     User @relation("AssignedTo", fields: [assignedTo], references: [id], onDelete: Cascade)
+  assigner User @relation("AssignedBy", fields: [assignedBy], references: [id])
 
   @@index([assignedTo, status, dueDate])
   @@index([quizId, assignedTo])
@@ -163,19 +165,19 @@ model Assignment {
 }
 
 model Attempt {
-  id            String        @id @default(uuid())
-  userId        String        @map("user_id")
-  quizId        String        @map("quiz_id")
-  startedAt     DateTime      @default(now()) @map("started_at")
-  completedAt   DateTime?     @map("completed_at")
-  status        AttemptStatus @default(in_progress)
-  score         Int           @default(0)
-  maxScore      Int           @default(0) @map("max_score")
-  percentage    Decimal?      @db.Decimal(5, 2)
-  timeSpent     Int?          @map("time_spent") // seconds
-  xpAwarded     Int?          @default(0) @map("xp_awarded")
-  isPassed      Boolean       @default(false) @map("is_passed")
-  answers       Json          // [{questionId, userAnswer, isCorrect, pointsEarned, timeSpent}]
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  quizId      String        @map("quiz_id")
+  startedAt   DateTime      @default(now()) @map("started_at")
+  completedAt DateTime?     @map("completed_at")
+  status      AttemptStatus @default(in_progress)
+  score       Int           @default(0)
+  maxScore    Int           @default(0) @map("max_score")
+  percentage  Decimal?      @db.Decimal(5, 2)
+  timeSpent   Int?          @map("time_spent") // seconds
+  xpAwarded   Int?          @default(0) @map("xp_awarded")
+  isPassed    Boolean       @default(false) @map("is_passed")
+  answers     Json // [{questionId, userAnswer, isCorrect, pointsEarned, timeSpent}]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
@@ -187,21 +189,24 @@ model Attempt {
 }
 
 model AIGenerationLog {
-  id                  String              @id @default(uuid())
-  adminId             String              @map("admin_id")
-  timestamp           DateTime            @default(now())
-  inputTextLength     Int                 @map("input_text_length")
-  questionsRequested  Int                 @map("questions_requested")
-  questionsGenerated  Int                 @map("questions_generated")
-  difficultyLevel     String              @map("difficulty_level") @db.VarChar(20)
-  questionTypes       String[]            @map("question_types")
-  modelUsed           String              @map("model_used") @db.VarChar(100)
-  processingTimeMs    Int                 @map("processing_time_ms")
-  status              AIGenerationStatus
-  errorMessage        String?             @map("error_message") @db.Text
+  id                 String             @id @default(uuid())
+  adminId            String             @map("admin_id")
+  timestamp          DateTime           @default(now())
+  inputTextLength    Int                @map("input_text_length")
+  questionsRequested Int                @map("questions_requested")
+  questionsGenerated Int                @default(0) @map("questions_generated")
+  difficultyLevel    String             @map("difficulty_level") @db.VarChar(20)
+  questionTypes      String[]           @map("question_types")
+  modelUsed          String             @map("model_used") @db.VarChar(100)
+  processingTimeMs   Int?               @map("processing_time_ms")
+  status             AIGenerationStatus @default(processing)
+  errorMessage       String?            @map("error_message") @db.Text
+  quizId             String?            @map("quiz_id")
 
   admin User @relation(fields: [adminId], references: [id])
+  quiz  Quiz? @relation(fields: [quizId], references: [id], onDelete: SetNull)
 
+  @@index([adminId, timestamp(sort: Desc)])
+  @@index([status])
   @@map("ai_generation_logs")
 }
-

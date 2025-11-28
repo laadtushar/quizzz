@@ -76,7 +76,7 @@ export async function POST(
       )
     }
 
-    // Check if retries are allowed
+    // Check if retries are allowed and max attempts limit
     if (!quiz.settingsAllowRetries) {
       const existingAttempt = await prisma.attempt.findFirst({
         where: {
@@ -89,6 +89,24 @@ export async function POST(
       if (existingAttempt) {
         return NextResponse.json(
           { error: 'Retries are not allowed for this quiz' },
+          { status: 400 }
+        )
+      }
+    } else if (quiz.settingsMaxAttempts !== null && quiz.settingsMaxAttempts !== undefined) {
+      // Check if user has reached max attempts
+      const completedAttempts = await prisma.attempt.count({
+        where: {
+          userId: user.id,
+          quizId: params.id,
+          status: 'completed',
+        },
+      })
+
+      if (completedAttempts >= quiz.settingsMaxAttempts) {
+        return NextResponse.json(
+          { 
+            error: `Maximum attempts (${quiz.settingsMaxAttempts}) reached for this quiz` 
+          },
           { status: 400 }
         )
       }

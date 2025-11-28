@@ -43,6 +43,7 @@ export async function POST(
           tags: originalQuiz.tags,
           settingsTimerSeconds: originalQuiz.settingsTimerSeconds,
           settingsAllowRetries: originalQuiz.settingsAllowRetries,
+          settingsMaxAttempts: originalQuiz.settingsMaxAttempts,
           settingsDifficultyLevel: originalQuiz.settingsDifficultyLevel,
           settingsPassingScore: originalQuiz.settingsPassingScore,
         },

@@ -32,3 +32,4 @@ export function QuizProgressBar({ current, total, className }: QuizProgressBarPr
   )
 }
 
+

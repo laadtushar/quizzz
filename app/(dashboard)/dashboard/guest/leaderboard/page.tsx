@@ -72,12 +72,20 @@ export default function LeaderboardPage() {
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {user.quizzesCompleted} quizzes completed
+                      {user.averagePercentage > 0 && (
+                        <span className="ml-2">• Avg: {user.averagePercentage.toFixed(1)}%</span>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right space-y-1">
                     <div className="text-lg font-bold text-primary">
                       {user.totalXp.toLocaleString()} XP
                     </div>
+                    {user.totalScore > 0 && (
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {user.totalScore.toLocaleString()} pts
+                      </div>
+                    )}
                   </div>
                 </div>
               )

@@ -185,14 +185,17 @@ export default function TakeQuizPage() {
     return <div>Quiz not found</div>
   }
 
-  // Check if retries are disabled and quiz already attempted
-  const hasCompletedAttempt = existingAttempts?.attempts?.some(
+  // Check if retries are disabled or max attempts reached
+  const completedAttempts = existingAttempts?.attempts?.filter(
     (a: any) => a.status === 'completed'
-  )
+  ) || []
+  const hasCompletedAttempt = completedAttempts.length > 0
   const retriesDisabled = !quiz.settingsAllowRetries
+  const maxAttempts = quiz.settingsMaxAttempts
+  const maxAttemptsReached = maxAttempts !== null && maxAttempts !== undefined && completedAttempts.length >= maxAttempts
 
-  // Show message if retries disabled and already attempted
-  if (retriesDisabled && hasCompletedAttempt && showPreQuizScreen) {
+  // Show message if retries disabled or max attempts reached
+  if ((retriesDisabled || maxAttemptsReached) && hasCompletedAttempt && showPreQuizScreen) {
     const completedAttempt = existingAttempts?.attempts?.find(
       (a: any) => a.status === 'completed'
     )
@@ -202,14 +205,17 @@ export default function TakeQuizPage() {
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <AlertCircle className="h-12 w-12 mx-auto text-yellow-500" />
-              <h2 className="text-2xl font-bold">Quiz Already Completed</h2>
+              <h2 className="text-2xl font-bold">Quiz Attempts Exhausted</h2>
               <p className="text-muted-foreground">
-                This quiz allows only one attempt. You have already completed it.
+                {retriesDisabled 
+                  ? 'This quiz allows only one attempt. You have already completed it.'
+                  : `You have reached the maximum number of attempts (${maxAttempts}) for this quiz.`
+                }
               </p>
               {completedAttempt && (
                 <div className="mt-4">
                   <p className="text-lg font-semibold">
-                    Your Score: {completedAttempt.percentage != null ? Number(completedAttempt.percentage).toFixed(1) : '0.0'}%
+                    Your Best Score: {completedAttempt.percentage != null ? Number(completedAttempt.percentage).toFixed(1) : '0.0'}%
                   </p>
                   <Button
                     className="mt-4"
@@ -273,8 +279,18 @@ export default function TakeQuizPage() {
               <div>
                 <div className="text-sm text-muted-foreground">Retries</div>
                 <div className="font-semibold mt-1">
-                  {quiz.settingsAllowRetries ? 'Allowed' : 'One attempt only'}
+                  {quiz.settingsAllowRetries 
+                    ? (quiz.settingsMaxAttempts 
+                        ? `Up to ${quiz.settingsMaxAttempts} attempts` 
+                        : 'Unlimited')
+                    : 'One attempt only'}
                 </div>
+                {quiz.settingsAllowRetries && completedAttempts.length > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {completedAttempts.length} {completedAttempts.length === 1 ? 'attempt' : 'attempts'} used
+                    {maxAttempts && ` (${maxAttempts - completedAttempts.length} remaining)`}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -294,6 +310,9 @@ export default function TakeQuizPage() {
                 )}
                 {!quiz.settingsAllowRetries && (
                   <li>This quiz allows only one attempt</li>
+                )}
+                {quiz.settingsAllowRetries && quiz.settingsMaxAttempts && (
+                  <li>Maximum {quiz.settingsMaxAttempts} attempts allowed</li>
                 )}
                 <li>Your progress will be auto-saved every 30 seconds</li>
                 <li>Once submitted, you cannot change your answers</li>

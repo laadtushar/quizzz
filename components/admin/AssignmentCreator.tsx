@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -51,6 +51,7 @@ export function AssignmentCreator() {
     resolver: zodResolver(createAssignmentSchema),
     defaultValues: {
       quizId: '',
+      userIds: [],
       dueDate: null,
     },
   })
@@ -60,7 +61,7 @@ export function AssignmentCreator() {
       const res = await fetch('/api/assignments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, userIds: selectedUserIds }),
+        body: JSON.stringify(data),
       })
       if (!res.ok) {
         const error = await res.json()
@@ -76,6 +77,7 @@ export function AssignmentCreator() {
       setSelectedUserIds([])
       reset({
         quizId: '',
+        userIds: [],
         dueDate: null,
       })
     },
@@ -90,7 +92,6 @@ export function AssignmentCreator() {
 
   const onSubmit = (data: AssignmentForm) => {
     console.log('Form submitted with data:', data)
-    console.log('Selected user IDs:', selectedUserIds)
     
     if (!data.quizId) {
       toast({
@@ -101,7 +102,7 @@ export function AssignmentCreator() {
       return
     }
     
-    if (selectedUserIds.length === 0) {
+    if (!data.userIds || data.userIds.length === 0) {
       toast({
         title: 'Error',
         description: 'Please select at least one user',
@@ -154,8 +155,8 @@ export function AssignmentCreator() {
       }
     }
     
-    console.log('Submitting assignment with:', { ...data, dueDate, userIds: selectedUserIds })
-    createMutation.mutate({ ...data, dueDate, userIds: selectedUserIds })
+    console.log('Submitting assignment with:', { ...data, dueDate })
+    createMutation.mutate({ ...data, dueDate })
   }
   
   const onError = (errors: any) => {
@@ -167,12 +168,17 @@ export function AssignmentCreator() {
     })
   }
 
+  // Sync selectedUserIds with form state
+  useEffect(() => {
+    setValue('userIds', selectedUserIds, { shouldValidate: true })
+  }, [selectedUserIds, setValue])
+
   const toggleUser = (userId: string) => {
-    setSelectedUserIds((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    )
+    const newUserIds = selectedUserIds.includes(userId)
+      ? selectedUserIds.filter((id) => id !== userId)
+      : [...selectedUserIds, userId]
+    
+    setSelectedUserIds(newUserIds)
   }
 
   const quizzes = quizzesData?.quizzes || []
@@ -238,8 +244,11 @@ export function AssignmentCreator() {
                 </div>
               )}
             </div>
-            {selectedUserIds.length === 0 && (
-              <p className="text-sm text-destructive">Select at least one user</p>
+            {errors.userIds && (
+              <p className="text-sm text-destructive">{errors.userIds.message as string}</p>
+            )}
+            {selectedUserIds.length === 0 && !errors.userIds && (
+              <p className="text-sm text-muted-foreground">Select at least one user</p>
             )}
           </div>
 
@@ -266,27 +275,6 @@ export function AssignmentCreator() {
             type="submit"
             className="w-full"
             disabled={createMutation.isPending || selectedUserIds.length === 0 || !watch('quizId')}
-            onClick={(e) => {
-              console.log('Button clicked')
-              console.log('Quiz ID:', watch('quizId'))
-              console.log('Selected users:', selectedUserIds)
-              console.log('Form errors:', errors)
-              if (!watch('quizId')) {
-                e.preventDefault()
-                toast({
-                  title: 'Error',
-                  description: 'Please select a quiz',
-                  variant: 'destructive',
-                })
-              } else if (selectedUserIds.length === 0) {
-                e.preventDefault()
-                toast({
-                  title: 'Error',
-                  description: 'Please select at least one user',
-                  variant: 'destructive',
-                })
-              }
-            }}
           >
             {createMutation.isPending ? 'Creating...' : 'Create Assignment'}
           </Button>
